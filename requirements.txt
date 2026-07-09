@@ -1,0 +1,5 @@
+mediapipe==0.10.21
+opencv-python==4.11.0.86
+evdev==1.9.1
+PyYAML==6.0.2
+numpy==1.26.4

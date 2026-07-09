@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# MediaPipe model cache
+mediapipe/
+
+# Device-local calibration data (per-machine, never commit)
+calibration/*.json
+
+# udev setup output (per-machine)
+permissions_setup.log
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo

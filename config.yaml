@@ -1,0 +1,47 @@
+# Hand Gesture Control — Configuration
+# Edit this file to customize gesture→action mappings and tuning parameters.
+
+camera:
+  index: 0                  # /dev/video index
+  mirror: true              # flip frame horizontally
+
+tracking:
+  detection_confidence: 0.7
+  tracking_confidence: 0.6
+
+gestures:
+  # Pinch threshold: max normalized distance between thumb tip and index tip.
+  # Lower = harder to trigger. Calibration mode will set this for you.
+  pinch_threshold: 0.05
+
+  # Minimum extended fingers to count as open palm.
+  fist_open_threshold: 3
+
+smoothing:
+  # One-Euro filter parameters.
+  # min_cutoff: lower = smoother but laggier cursor.
+  # beta: higher = more responsive during fast movement.
+  freq: 30.0
+  min_cutoff: 1.0
+  beta: 0.007
+  d_cutoff: 1.0
+
+# Gesture → action mapping
+actions:
+  open_palm: move_cursor     # follow palm center
+  pinch: left_click
+  fist: pause                # freeze cursor, ignore input
+  two_finger_scroll: scroll  # vertical scroll follows hand movement
+
+  # Custom shell command: any action value that isn't a built-in keyword
+  # (move_cursor, left_click, pause, scroll) is run as a shell command
+  # on gesture transition. Examples:
+  #   fist: "notify-send 'Paused!'"
+  #   two_finger_scroll: "playerctl play-pause"
+
+# Screen mapping
+screen:
+  # Portion of the camera frame that maps to full screen movement.
+  # Smaller = more sensitive, larger = need bigger hand movement.
+  # Format: [left, top, right, bottom] as fractions of frame.
+  active_region: [0.15, 0.15, 0.85, 0.85]
