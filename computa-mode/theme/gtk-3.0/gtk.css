@@ -1,0 +1,130 @@
+/* Cyberpunk GTK3 Overrides - Computa Mode */
+
+@define-color theme_bg_color #0a0a1a;
+@define-color theme_fg_color #c0c0d0;
+@define-color theme_base_color #080818;
+@define-color theme_text_color #c0c0d0;
+@define-color theme_selected_bg_color #00cccc;
+@define-color theme_selected_fg_color #000000;
+@define-color accent_bg_color #00cccc;
+@define-color accent_color #00ffff;
+@define-color borders rgba(0, 255, 255, 0.15);
+@define-color warning_color #ffcc00;
+@define-color error_color #ff0055;
+@define-color success_color #00ff88;
+
+/* Selection */
+selection,
+*:selected {
+  background-color: #00cccc;
+  color: #000000;
+}
+
+/* Links */
+*:link,
+*:visited {
+  color: #ff00ff;
+}
+
+*:link:hover {
+  color: #ff44ff;
+}
+
+/* Scrollbars */
+scrollbar slider {
+  background-color: rgba(0, 255, 255, 0.25);
+  border-radius: 10px;
+  min-width: 8px;
+  min-height: 8px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(0, 255, 255, 0.45);
+}
+
+scrollbar slider:active {
+  background-color: rgba(0, 255, 255, 0.6);
+}
+
+/* Buttons */
+button:hover {
+  box-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+}
+
+/* Header bars */
+headerbar {
+  background-color: #0a0a1a;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  color: #c0c0d0;
+}
+
+headerbar:backdrop {
+  background-color: #080818;
+}
+
+/* Tooltips */
+tooltip {
+  background-color: rgba(8, 8, 24, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  color: #00ffff;
+}
+
+/* Switch (toggle) */
+switch:checked {
+  background-color: #00cccc;
+}
+
+switch:checked slider {
+  background-color: #000000;
+}
+
+/* Progress bars */
+progressbar progress {
+  background-color: #00ffff;
+  border-radius: 3px;
+}
+
+progressbar trough {
+  background-color: rgba(0, 255, 255, 0.1);
+}
+
+/* Scale (slider) */
+scale highlight {
+  background-color: #00ffff;
+}
+
+scale slider {
+  background-color: #00ffff;
+  border: 2px solid #080818;
+}
+
+/* Check and radio buttons */
+check:checked,
+radio:checked {
+  background-color: #00cccc;
+  color: #000000;
+}
+
+/* Text entries */
+entry:focus {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: #080818;
+  border-right: 1px solid rgba(0, 255, 255, 0.08);
+}
+
+.sidebar row:selected {
+  background-color: rgba(0, 255, 255, 0.12);
+  color: #00ffff;
+}
+
+/* Notebooks/tabs */
+notebook tab:checked {
+  border-bottom: 2px solid #00ffff;
+  color: #00ffff;
+}

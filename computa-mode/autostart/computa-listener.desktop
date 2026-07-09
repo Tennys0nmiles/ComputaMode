@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Computa Voice Listener
+Comment=Push-to-talk voice-activated Claude Code launcher
+Exec=/home/xesun/computa-mode/venv/bin/python3 /home/xesun/computa-mode/computa-listener.py
+Icon=audio-input-microphone
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Phase=Application
+X-GNOME-Autostart-Delay=5
+StartupNotify=false

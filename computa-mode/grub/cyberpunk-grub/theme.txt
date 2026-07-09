@@ -1,0 +1,49 @@
+# Cyberpunk GRUB Theme - Computa Mode
+
+title-text: "COMPUTA SYSTEM"
+title-font: "ShareTechMono Regular 24"
+title-color: "#00ffff"
+desktop-color: "#080818"
+desktop-image: "background.png"
+message-font: "ShareTechMono Regular 14"
+message-color: "#ff00ff"
+message-bg-color: "#080818"
+terminal-font: "ShareTechMono Regular 14"
+
++ boot_menu {
+  left = 25%
+  top = 30%
+  width = 50%
+  height = 50%
+  item_font = "ShareTechMono Regular 16"
+  item_color = "#a0a0b8"
+  selected_item_font = "ShareTechMono Regular 16"
+  selected_item_color = "#00ffff"
+  item_height = 32
+  item_padding = 8
+  item_spacing = 4
+  item_icon_space = 8
+  icon_width = 24
+  icon_height = 24
+  menu_pixmap_style = "menu_*.png"
+}
+
++ label {
+  left = 25%
+  top = 85%
+  width = 50%
+  text = ">> SELECT BOOT TARGET <<"
+  font = "ShareTechMono Regular 12"
+  color = "#ff00ff"
+  align = "center"
+}
+
++ label {
+  left = 25%
+  top = 90%
+  width = 50%
+  text = "COMPUTA-MODE v2.0 // LINUX"
+  font = "ShareTechMono Regular 10"
+  color = "#404060"
+  align = "center"
+}

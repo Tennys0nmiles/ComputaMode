@@ -12,6 +12,14 @@ calibration/*.json
 # udev setup output (per-machine)
 permissions_setup.log
 
+# Computa-mode device-local files
+computa-mode/venv/
+computa-mode/voice_profile.npy
+computa-mode/cyberpunk_wallpaper.bmp
+
+# Vosk model (downloaded per-machine)
+computa-mode/models/
+
 # Editor / IDE
 .vscode/
 .idea/

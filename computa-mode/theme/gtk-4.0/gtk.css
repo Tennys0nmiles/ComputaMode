@@ -1,0 +1,108 @@
+/* Cyberpunk GTK4 Overrides - Computa Mode */
+
+@define-color accent_bg_color #00cccc;
+@define-color accent_fg_color #000000;
+@define-color accent_color #00ffff;
+@define-color window_bg_color #0a0a1a;
+@define-color window_fg_color #c0c0d0;
+@define-color view_bg_color #080818;
+@define-color view_fg_color #c0c0d0;
+@define-color headerbar_bg_color #0a0a1a;
+@define-color headerbar_fg_color #c0c0d0;
+@define-color card_bg_color #0e0e22;
+@define-color card_fg_color #c0c0d0;
+@define-color popover_bg_color #0a0a1a;
+@define-color popover_fg_color #c0c0d0;
+@define-color sidebar_bg_color #080818;
+@define-color sidebar_fg_color #c0c0d0;
+@define-color dialog_bg_color #0a0a1a;
+@define-color dialog_fg_color #c0c0d0;
+@define-color warning_bg_color #ffcc00;
+@define-color warning_fg_color #000000;
+@define-color error_bg_color #ff0055;
+@define-color error_fg_color #ffffff;
+@define-color success_bg_color #00ff88;
+@define-color success_fg_color #000000;
+@define-color borders rgba(0, 255, 255, 0.12);
+
+/* Selection */
+selection,
+*:selected {
+  background-color: #00cccc;
+  color: #000000;
+}
+
+/* Links */
+*:link {
+  color: #ff00ff;
+}
+
+*:link:hover {
+  color: #ff44ff;
+}
+
+/* Scrollbars */
+scrollbar slider {
+  background-color: rgba(0, 255, 255, 0.25);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(0, 255, 255, 0.45);
+}
+
+scrollbar slider:active {
+  background-color: rgba(0, 255, 255, 0.6);
+}
+
+/* Header bars */
+headerbar {
+  background-color: #0a0a1a;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* Tooltips */
+tooltip {
+  background-color: rgba(8, 8, 24, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: #00ffff;
+}
+
+/* Switch */
+switch:checked {
+  background-color: #00cccc;
+}
+
+/* Progress bars */
+progressbar > trough > progress {
+  background-color: #00ffff;
+}
+
+/* Scale */
+scale > trough > highlight {
+  background-color: #00ffff;
+}
+
+/* Check/radio */
+check:checked,
+radio:checked {
+  background-color: #00cccc;
+  color: #000000;
+}
+
+/* Entry focus */
+entry:focus-within {
+  outline-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+}
+
+/* Sidebar */
+.navigation-sidebar row:selected {
+  background-color: rgba(0, 255, 255, 0.12);
+  color: #00ffff;
+}
+
+/* Tabs */
+tabbar tab:checked {
+  border-bottom: 2px solid #00ffff;
+}

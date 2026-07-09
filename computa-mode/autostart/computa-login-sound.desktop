@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Computa Login Sound
+Comment=Play cyberpunk login sound
+Exec=pw-play /home/xesun/computa-mode/assets/sounds/login.ogg
+Icon=audio-volume-high
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Phase=Application
+X-GNOME-Autostart-Delay=2
+StartupNotify=false

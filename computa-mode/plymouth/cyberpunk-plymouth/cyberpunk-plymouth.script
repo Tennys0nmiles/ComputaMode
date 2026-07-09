@@ -1,0 +1,70 @@
+/* Cyberpunk Plymouth Boot Animation - Computa Mode
+ * Frame-based animation: cycles through pre-generated PNG frames
+ */
+
+/* Load all animation frames */
+frame_count = 60;
+frames = [];
+
+for (i = 0; i < frame_count; i++) {
+    if (i < 10)
+        frames[i] = Image("frame_000" + i + ".png");
+    else
+        frames[i] = Image("frame_00" + i + ".png");
+}
+
+/* Create the sprite for animation */
+anim_sprite = Sprite();
+
+/* Center the animation */
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+if (frames[0]) {
+    img_width = frames[0].GetWidth();
+    img_height = frames[0].GetHeight();
+    scale_x = screen_width / img_width;
+    scale_y = screen_height / img_height;
+
+    anim_sprite.SetX(0);
+    anim_sprite.SetY(0);
+}
+
+/* Animation state */
+current_frame = 0;
+frame_delay = 2;  /* Update every N refresh cycles (controls speed) */
+cycle_count = 0;
+
+/* Main refresh callback */
+fun refresh_callback() {
+    cycle_count++;
+    if (cycle_count >= frame_delay) {
+        cycle_count = 0;
+        current_frame = (current_frame + 1) % frame_count;
+        anim_sprite.SetImage(frames[current_frame].Scale(screen_width, screen_height));
+    }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+/* Password prompt styling (for encrypted disks) */
+fun display_password_callback(prompt, bullets) {
+    /* Keep animation running behind the prompt */
+    /* The prompt is handled by Plymouth's built-in dialog */
+}
+
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+/* Boot progress (optional - we use frame-based animation instead) */
+fun boot_progress_callback(duration, progress) {
+    /* Could adjust animation speed based on boot progress */
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);
+
+/* Message display */
+fun message_callback(text) {
+    /* Messages are shown by Plymouth's built-in text layer */
+}
+
+Plymouth.SetMessageFunction(message_callback);

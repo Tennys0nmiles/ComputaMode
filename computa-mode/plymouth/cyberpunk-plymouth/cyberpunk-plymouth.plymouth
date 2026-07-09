@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Cyberpunk
+Description=Cyberpunk boot animation for computa-mode
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/cyberpunk-plymouth/assets
+ScriptFile=/usr/share/plymouth/themes/cyberpunk-plymouth/cyberpunk-plymouth.script

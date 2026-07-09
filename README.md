@@ -1,8 +1,11 @@
-# Hand Gesture Control
+# ComputaMode
 
-Webcam-based hand gesture system for cursor control and system actions on Linux.
-Uses MediaPipe Hands for tracking, kernel uinput (via evdev) for input injection.
-Works on both **Wayland and X11**.
+Voice-activated workspace launcher + webcam hand gesture control for Linux/GNOME.
+
+Two systems that work together:
+
+- **[computa-mode/](computa-mode/)** — Voice-activated theme, app launcher, and workspace manager. Say "computa activate" to apply a cyberpunk theme, launch apps, and start hand gesture control.
+- **Hand gesture control** (root directory) — Webcam-based cursor control and system actions using MediaPipe Hands + kernel uinput. Works on Wayland and X11.
 
 ## How it works
 
@@ -10,10 +13,12 @@ Works on both **Wayland and X11**.
 Camera → MediaPipe Hands (21 landmarks) → Gesture classifier → One-Euro filter → uinput virtual mouse
 ```
 
-- **Open palm** — moves cursor (follows palm center)
-- **Pinch** (thumb to index tip) — left click
+- **Open palm** — moves cursor (follows palm center); fast swipe switches workspace
+- **Pinch** (thumb to index tip) — left click; hold and move closer/farther to zoom
+- **Middle finger + thumb** — right click
 - **Fist** — pause/freeze cursor control
 - **Two-finger** (index + middle extended) — vertical scroll
+- **Shaka** (thumb + pinky out) — Alt+Tab; tilt hand to cycle tabs
 
 The uinput approach creates a kernel-level virtual input device, so it works
 regardless of display server. pyautogui/pynput use X11's XTEST protocol which
@@ -109,10 +114,17 @@ actions:
   two_finger_scroll: "playerctl play-pause"
 ```
 
+## Computa-Mode (Voice Activation)
+
+See [computa-mode/README.md](computa-mode/README.md) for full setup.
+
+When you say "computa activate," computa-mode applies the cyberpunk theme,
+launches your workspace apps, and automatically starts hand gesture control.
+
 ## Files
 
 ```
-├── run.sh                  # Entry point
+├── run.sh                  # Hand gesture entry point
 ├── setup_permissions.sh    # udev + group setup (run once per machine)
 ├── config.yaml             # Gesture mapping + tuning (edit this)
 ├── requirements.txt        # Pinned Python dependencies
@@ -126,7 +138,17 @@ actions:
 │   ├── injector.py         # uinput virtual mouse via evdev
 │   ├── calibration.py      # Interactive calibration mode
 │   └── config.py           # YAML config loader
-└── calibration/            # Device-local thresholds (gitignored)
+├── calibration/            # Device-local thresholds (gitignored)
+└── computa-mode/           # Voice-activated workspace launcher
+    ├── README.md
+    ├── computa-listener.py # Main daemon (voice listener + orchestrator)
+    ├── computa-trigger.py  # Hotkey trigger (sends signal to listener)
+    ├── computa-theme.py    # Cyberpunk theme applicator
+    ├── computa-wallpaper.py# Visual asset generator
+    ├── computa-sounds.py   # Synthetic sound generator
+    ├── speaker_verify.py   # Voice biometric verification
+    ├── install.sh          # Per-machine setup
+    └── uninstall.sh        # Cleanup
 ```
 
 ## Gitignored (per-machine, never committed)
@@ -135,3 +157,5 @@ actions:
 - `calibration/*.json` — calibration thresholds
 - `__pycache__/` — bytecode cache
 - `mediapipe/` — downloaded model cache
+- `computa-mode/venv/` — computa-mode venv
+- `computa-mode/voice_profile.npy` — speaker enrollment data
