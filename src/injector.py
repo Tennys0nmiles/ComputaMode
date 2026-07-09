@@ -44,6 +44,11 @@ class VirtualMouse:
                 ecodes.BTN_LEFT,
                 ecodes.BTN_RIGHT,
                 ecodes.BTN_MIDDLE,
+                ecodes.KEY_LEFTALT,
+                ecodes.KEY_TAB,
+                ecodes.KEY_LEFTCTRL,
+                ecodes.KEY_LEFT,
+                ecodes.KEY_RIGHT,
             ],
             ecodes.EV_REL: [
                 ecodes.REL_WHEEL,
@@ -81,6 +86,21 @@ class VirtualMouse:
         """Scroll vertically. Positive = up, negative = down."""
         self.device.write(ecodes.EV_REL, ecodes.REL_WHEEL, int(amount))
         self.device.syn()
+
+    def key_press(self, key):
+        """Press a key."""
+        self.device.write(ecodes.EV_KEY, key, 1)
+        self.device.syn()
+
+    def key_release(self, key):
+        """Release a key."""
+        self.device.write(ecodes.EV_KEY, key, 0)
+        self.device.syn()
+
+    def key_tap(self, key):
+        """Press and release a key."""
+        self.key_press(key)
+        self.key_release(key)
 
     def close(self):
         """Destroy the virtual device."""

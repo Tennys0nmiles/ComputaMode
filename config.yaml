@@ -32,6 +32,7 @@ actions:
   pinch: left_click
   fist: pause                # freeze cursor, ignore input
   two_finger_scroll: scroll  # vertical scroll follows hand movement
+  tab_switch: alt_tab         # shaka (thumb+pinky) opens Alt+Tab, move hand to select
 
   # Custom shell command: any action value that isn't a built-in keyword
   # (move_cursor, left_click, pause, scroll) is run as a shell command

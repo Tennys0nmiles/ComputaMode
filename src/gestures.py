@@ -26,6 +26,8 @@ class Gesture(Enum):
     PINCH = auto()
     FIST = auto()
     TWO_FINGER_SCROLL = auto()
+    TAB_SWITCH = auto()
+    RIGHT_CLICK = auto()
 
 
 def _dist(a, b):
@@ -68,16 +70,36 @@ def _thumb_is_extended(landmarks):
 class GestureClassifier:
     """Classifies hand gestures from 21 landmarks."""
 
-    def __init__(self, pinch_threshold=0.05, fist_open_threshold=3):
+    def __init__(self, pinch_threshold=0.05, fist_open_threshold=3,
+                 stability_frames=3):
         """
         Args:
             pinch_threshold: Max distance between thumb tip and index tip
                 (normalized coords) to count as a pinch.
             fist_open_threshold: Minimum number of extended fingers to count
                 as an open palm.
+            stability_frames: Number of consecutive frames a new gesture must
+                be seen before switching. Prevents flicker between gestures.
         """
         self.pinch_threshold = pinch_threshold
         self.fist_open_threshold = fist_open_threshold
+        self.stability_frames = stability_frames
+        self._raw_prev = Gesture.NONE
+        self._raw_count = 0
+        self._stable_gesture = Gesture.NONE
+
+    def _stabilize(self, raw_gesture):
+        """Require a gesture to persist for N frames before switching."""
+        if raw_gesture == self._raw_prev:
+            self._raw_count += 1
+        else:
+            self._raw_prev = raw_gesture
+            self._raw_count = 1
+
+        if self._raw_count >= self.stability_frames:
+            self._stable_gesture = raw_gesture
+
+        return self._stable_gesture
 
     def classify(self, landmarks):
         """Classify gesture from 21 landmarks [(x,y,z), ...].
@@ -85,7 +107,7 @@ class GestureClassifier:
         Returns (Gesture, dict) where dict has debug info.
         """
         if landmarks is None or len(landmarks) != 21:
-            return Gesture.NONE, {}
+            return self._stabilize(Gesture.NONE), {}
 
         # Check individual finger extension
         index_ext = _finger_is_extended(landmarks, 5, 6, 7, 8)
@@ -97,29 +119,40 @@ class GestureClassifier:
         fingers = [thumb_ext, index_ext, middle_ext, ring_ext, pinky_ext]
         extended_count = sum(fingers)
 
-        # Pinch: thumb tip close to index tip
+        # Pinch distances: thumb tip to index tip / middle tip
         pinch_dist = _dist(landmarks[4], landmarks[8])
+        mid_pinch_dist = _dist(landmarks[4], landmarks[12])
 
         debug = {
             "fingers": fingers,
             "extended_count": extended_count,
             "pinch_dist": pinch_dist,
+            "mid_pinch_dist": mid_pinch_dist,
         }
 
-        # Priority: pinch > fist > two-finger scroll > open palm
+        # Priority: right click (mid pinch) > left click (index pinch) >
+        #           tab switch > two-finger scroll > open palm > fist
+        # Check middle-finger pinch first so it doesn't get eaten by index pinch
+        if mid_pinch_dist < self.pinch_threshold:
+            return self._stabilize(Gesture.RIGHT_CLICK), debug
+
         if pinch_dist < self.pinch_threshold:
-            return Gesture.PINCH, debug
+            return self._stabilize(Gesture.PINCH), debug
 
-        if extended_count <= 1:
-            return Gesture.FIST, debug
+        # Shaka: thumb + pinky extended, index + middle + ring curled
+        if thumb_ext and pinky_ext and not index_ext and not middle_ext and not ring_ext:
+            return self._stabilize(Gesture.TAB_SWITCH), debug
 
-        if (index_ext and middle_ext and not ring_ext and not pinky_ext):
-            return Gesture.TWO_FINGER_SCROLL, debug
+        if index_ext and middle_ext and not ring_ext and not pinky_ext:
+            return self._stabilize(Gesture.TWO_FINGER_SCROLL), debug
 
         if extended_count >= self.fist_open_threshold:
-            return Gesture.OPEN_PALM, debug
+            return self._stabilize(Gesture.OPEN_PALM), debug
 
-        return Gesture.NONE, debug
+        if extended_count <= 1:
+            return self._stabilize(Gesture.FIST), debug
+
+        return self._stabilize(Gesture.NONE), debug
 
     def palm_center(self, landmarks):
         """Return palm center as (x, y) — centroid of wrist + finger MCP landmarks.
