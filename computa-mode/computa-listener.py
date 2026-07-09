@@ -22,7 +22,7 @@ import sounddevice as sd
 from scipy.signal import resample_poly
 from math import gcd
 
-COMPUTA_DIR = Path.home() / "computa-mode"
+COMPUTA_DIR = Path(__file__).resolve().parent
 VENV_PYTHON = COMPUTA_DIR / "venv" / "bin" / "python3"
 VOSK_MODEL_DIR = Path.home() / ".local" / "share" / "computa-mode" / "vosk-model-small-en-us-0.15"
 SOCKET_PATH = Path(f"/run/user/{os.getuid()}/computa-listener.sock")
@@ -414,7 +414,7 @@ def _handle_trigger_inner():
                     time.sleep(3)
 
                     # Hand gesture control
-                    gesture_dir = Path.home() / "hand-gesture-control"
+                    gesture_dir = COMPUTA_DIR.parent
                     if gesture_dir.exists():
                         gesture_run = gesture_dir / "run.sh"
                         if gesture_run.exists():

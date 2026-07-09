@@ -5,7 +5,7 @@ set -euo pipefail
 # COMPUTA-MODE INSTALLER - Linux/GNOME Edition
 # ============================================
 
-COMPUTA_DIR="$HOME/computa-mode"
+COMPUTA_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$COMPUTA_DIR/venv"
 VOSK_MODEL_DIR="$HOME/.local/share/computa-mode"
 VOSK_MODEL_NAME="vosk-model-small-en-us-0.15"
@@ -234,8 +234,13 @@ fi
 # ---- Step 15: Install autostart entries ----
 log "Installing autostart entries..."
 mkdir -p "$HOME/.config/autostart"
-cp "$COMPUTA_DIR/autostart/computa-listener.desktop" "$HOME/.config/autostart/"
-cp "$COMPUTA_DIR/autostart/computa-login-sound.desktop" "$HOME/.config/autostart/"
+# Fill in paths from templates
+sed "s|__VENV_PYTHON__|$VENV_DIR/bin/python3|g; s|__COMPUTA_DIR__|$COMPUTA_DIR|g" \
+  "$COMPUTA_DIR/autostart/computa-listener.desktop" \
+  > "$HOME/.config/autostart/computa-listener.desktop"
+sed "s|__COMPUTA_DIR__|$COMPUTA_DIR|g" \
+  "$COMPUTA_DIR/autostart/computa-login-sound.desktop" \
+  > "$HOME/.config/autostart/computa-login-sound.desktop"
 ok "Autostart entries installed"
 
 # ---- Step 16: Install notification sounds ----
@@ -259,7 +264,7 @@ echo -e "${CYAN}║${NC}  Say ${GREEN}'computa activate'${NC} to launch        $
 echo -e "${CYAN}║${NC}  Claude Code with cyberpunk theme         ${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}                                            ${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}  ${YELLOW}Re-enroll voice on Linux:${NC}                 ${CYAN}║${NC}"
-echo -e "${CYAN}║${NC}  ${CYAN}cd ~/computa-mode && source venv/bin/activate${NC}${CYAN}║${NC}"
+echo -e "${CYAN}║${NC}  ${CYAN}cd $COMPUTA_DIR && source venv/bin/activate${NC}${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}  ${CYAN}python3 speaker_verify.py enroll${NC}           ${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}                                            ${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}  ${YELLOW}Reboot to see GRUB + Plymouth themes${NC}      ${CYAN}║${NC}"

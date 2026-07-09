@@ -37,6 +37,7 @@ sudo apt install python3-venv portaudio19-dev ffmpeg gnome-shell-extensions
 ### 2. Run the installer
 
 ```bash
+cd computa-mode
 bash install.sh
 ```
 
