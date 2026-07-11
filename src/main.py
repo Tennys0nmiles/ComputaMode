@@ -318,8 +318,8 @@ def main():
                         def _voice_task(audio_data):
                             text = transcribe(audio_data)
                             if text:
-                                action, score, phrase = voice_matcher.match(text)
-                                if action:
+                                matches = voice_matcher.match_all(text)
+                                for action, score, phrase in matches:
                                     dispatcher.execute(action)
                         threading.Thread(
                             target=_voice_task, args=(audio,), daemon=True

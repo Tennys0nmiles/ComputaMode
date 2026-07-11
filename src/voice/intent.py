@@ -10,7 +10,7 @@ Fallback hook:
 
 import difflib
 import re
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import yaml
 
@@ -94,3 +94,34 @@ class IntentMatcher:
             return fallback, 1.0, "(fallback)"
 
         return None, best_score, best_phrase
+
+    # Words that join chained commands: "close tab and open terminal"
+    _CHAIN_SPLIT = re.compile(
+        r'\b(?:and then|after that|and also|and|then|also|next)\b'
+    )
+
+    def match_all(self, text: str) -> List[Tuple[Optional[str], float, str]]:
+        """Split on chain words and match each segment independently.
+
+        Returns a list of (action, score, phrase) for every segment that
+        matches above the confidence threshold.  Unmatched segments are
+        silently skipped.
+
+        Example:
+            "select all and copy then paste"
+            → [("xdotool key ctrl+a", ...), ("xdotool key ctrl+c", ...),
+               ("xdotool key ctrl+v", ...)]
+        """
+        segments = [s.strip() for s in self._CHAIN_SPLIT.split(text) if s.strip()]
+
+        # If no split happened (single command), avoid double-processing
+        if not segments:
+            segments = [text]
+
+        results = []
+        for seg in segments:
+            action, score, phrase = self.match(seg)
+            if action:
+                results.append((action, score, phrase))
+
+        return results

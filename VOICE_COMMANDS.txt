@@ -1,0 +1,95 @@
+VOICE COMMANDS REFERENCE
+========================
+Activate: touch thumb tip to pinky tip, speak, release to fire.
+Chain:    say "and" / "then" / "also" between commands to run multiple.
+          e.g. "select all and copy" | "close tab then go back"
+
+Requires: xdotool  →  sudo apt install xdotool
+
+────────────────────────────────────────────────────────
+APP LAUNCHING
+────────────────────────────────────────────────────────
+"open browser"          → xdg-open https://google.com
+"open terminal"         → gnome-terminal
+"open files"            → nautilus (file manager)
+"open editor"           → VS Code
+"open settings"         → GNOME settings
+"open calculator"       → GNOME calculator
+
+────────────────────────────────────────────────────────
+TAB MANAGEMENT
+────────────────────────────────────────────────────────
+"close tab"             → Ctrl+W
+"new tab"               → Ctrl+T
+"reopen tab"            → Ctrl+Shift+T  (undo close)
+"next tab"              → Ctrl+Tab
+"previous tab"          → Ctrl+Shift+Tab
+
+────────────────────────────────────────────────────────
+WINDOW MANAGEMENT
+────────────────────────────────────────────────────────
+"close window"          → Alt+F4
+"new window"            → Ctrl+N
+"minimize"              → Super+H
+"maximize"              → Super+↑
+"fullscreen"            → F11
+
+────────────────────────────────────────────────────────
+NAVIGATION
+────────────────────────────────────────────────────────
+"go back"               → Alt+←
+"go forward"            → Alt+→
+"refresh"               → Ctrl+R
+
+────────────────────────────────────────────────────────
+EDITING
+────────────────────────────────────────────────────────
+"copy"                  → Ctrl+C
+"paste"                 → Ctrl+V
+"cut"                   → Ctrl+X
+"undo"                  → Ctrl+Z
+"redo"                  → Ctrl+Shift+Z
+"select all"            → Ctrl+A
+"save"                  → Ctrl+S
+"find"                  → Ctrl+F
+
+────────────────────────────────────────────────────────
+ZOOM
+────────────────────────────────────────────────────────
+"zoom in"               → Ctrl++
+"zoom out"              → Ctrl+-
+"reset zoom"            → Ctrl+0
+
+────────────────────────────────────────────────────────
+SCROLL
+────────────────────────────────────────────────────────
+"scroll up"             → 3 wheel ticks up
+"scroll down"           → 3 wheel ticks down
+
+────────────────────────────────────────────────────────
+MEDIA / VOLUME
+────────────────────────────────────────────────────────
+"play" / "pause"        → media play/pause key
+"volume up"             → media volume up key
+"volume down"           → media volume down key
+"mute"                  → media mute key
+
+────────────────────────────────────────────────────────
+SCREENSHOT
+────────────────────────────────────────────────────────
+"take screenshot"       → gnome-screenshot
+
+────────────────────────────────────────────────────────
+GESTURE CONTROL
+────────────────────────────────────────────────────────
+"pause gestures"        → freeze gesture control
+"resume gestures"       → unfreeze gesture control
+
+────────────────────────────────────────────────────────
+TIPS
+────────────────────────────────────────────────────────
+• Fuzzy matching handles slight mispronunciation / transcription errors.
+• Many phrases are accepted per command — see voice_commands.yaml for the
+  full synonym list, or add your own.
+• Add a custom command: edit voice_commands.yaml, add a new intent block
+  with phrases and an action (shell command or built-in keyword).

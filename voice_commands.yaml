@@ -6,10 +6,15 @@
 #                       pause_gestures, resume_gestures
 #   Anything else     : executed as a shell command
 #
+# Chaining: say "and", "then", or "also" between commands to run multiple.
+#   e.g. "close tab and open terminal" runs both actions in sequence.
+#
+# Keyboard shortcuts use xdotool (install: sudo apt install xdotool).
 # Fuzzy matching handles minor transcription errors automatically.
-# If nothing matches confidently the system reports what it heard and does nothing.
 
 intents:
+
+  # ── Browser / app launching ────────────────────────────────────────────────
   open_browser:
     phrases:
       - open browser
@@ -18,6 +23,7 @@ intents:
       - launch firefox
       - open chrome
       - go to browser
+      - open web
     action: "xdg-open https://google.com"
 
   open_terminal:
@@ -26,8 +32,239 @@ intents:
       - launch terminal
       - new terminal
       - open console
+      - new console
     action: "gnome-terminal"
 
+  open_files:
+    phrases:
+      - open files
+      - open file manager
+      - launch files
+      - open finder
+      - open folder
+    action: "nautilus"
+
+  open_editor:
+    phrases:
+      - open editor
+      - open vs code
+      - launch vs code
+      - open code
+      - open vscode
+    action: "code"
+
+  open_settings:
+    phrases:
+      - open settings
+      - launch settings
+      - system settings
+      - open preferences
+    action: "gnome-control-center"
+
+  open_calculator:
+    phrases:
+      - open calculator
+      - launch calculator
+      - calculator
+    action: "gnome-calculator"
+
+  # ── Tab management ─────────────────────────────────────────────────────────
+  close_tab:
+    phrases:
+      - close tab
+      - close this tab
+      - close current tab
+      - shut tab
+      - exit tab
+    action: "xdotool key ctrl+w"
+
+  new_tab:
+    phrases:
+      - new tab
+      - open tab
+      - open new tab
+      - create tab
+    action: "xdotool key ctrl+t"
+
+  reopen_tab:
+    phrases:
+      - reopen tab
+      - restore tab
+      - undo close tab
+      - bring back tab
+    action: "xdotool key ctrl+shift+t"
+
+  next_tab:
+    phrases:
+      - next tab
+      - tab right
+      - go to next tab
+      - switch tab right
+    action: "xdotool key ctrl+Tab"
+
+  previous_tab:
+    phrases:
+      - previous tab
+      - last tab
+      - tab left
+      - go to previous tab
+      - switch tab left
+    action: "xdotool key ctrl+shift+Tab"
+
+  # ── Window management ──────────────────────────────────────────────────────
+  close_window:
+    phrases:
+      - close window
+      - close this window
+      - quit window
+      - exit window
+    action: "xdotool key alt+F4"
+
+  new_window:
+    phrases:
+      - new window
+      - open window
+      - open new window
+    action: "xdotool key ctrl+n"
+
+  minimize_window:
+    phrases:
+      - minimize
+      - minimize window
+      - hide window
+      - shrink window
+    action: "xdotool key super+h"
+
+  maximize_window:
+    phrases:
+      - maximize
+      - maximize window
+      - full window
+      - expand window
+    action: "xdotool key super+Up"
+
+  fullscreen:
+    phrases:
+      - fullscreen
+      - full screen
+      - toggle fullscreen
+      - go fullscreen
+    action: "xdotool key F11"
+
+  # ── Navigation ─────────────────────────────────────────────────────────────
+  go_back:
+    phrases:
+      - go back
+      - back
+      - navigate back
+      - previous page
+    action: "xdotool key alt+Left"
+
+  go_forward:
+    phrases:
+      - go forward
+      - forward
+      - navigate forward
+      - next page
+    action: "xdotool key alt+Right"
+
+  refresh:
+    phrases:
+      - refresh
+      - reload
+      - refresh page
+      - reload page
+    action: "xdotool key ctrl+r"
+
+  # ── Editing ────────────────────────────────────────────────────────────────
+  copy:
+    phrases:
+      - copy
+      - copy that
+      - copy selection
+      - copy text
+    action: "xdotool key ctrl+c"
+
+  paste:
+    phrases:
+      - paste
+      - paste that
+      - paste text
+      - paste here
+    action: "xdotool key ctrl+v"
+
+  cut:
+    phrases:
+      - cut
+      - cut that
+      - cut selection
+      - cut text
+    action: "xdotool key ctrl+x"
+
+  undo:
+    phrases:
+      - undo
+      - undo that
+      - go back undo
+      - revert
+    action: "xdotool key ctrl+z"
+
+  redo:
+    phrases:
+      - redo
+      - redo that
+      - redo action
+    action: "xdotool key ctrl+shift+z"
+
+  select_all:
+    phrases:
+      - select all
+      - highlight all
+      - select everything
+    action: "xdotool key ctrl+a"
+
+  save:
+    phrases:
+      - save
+      - save file
+      - save document
+      - save this
+    action: "xdotool key ctrl+s"
+
+  find:
+    phrases:
+      - find
+      - search page
+      - find on page
+      - open search
+    action: "xdotool key ctrl+f"
+
+  # ── Zoom ───────────────────────────────────────────────────────────────────
+  zoom_in:
+    phrases:
+      - zoom in
+      - make bigger
+      - increase zoom
+      - zoom closer
+    action: "xdotool key ctrl+plus"
+
+  zoom_out:
+    phrases:
+      - zoom out
+      - make smaller
+      - decrease zoom
+      - zoom away
+    action: "xdotool key ctrl+minus"
+
+  reset_zoom:
+    phrases:
+      - reset zoom
+      - default zoom
+      - normal zoom
+      - zoom reset
+    action: "xdotool key ctrl+0"
+
+  # ── Scroll ─────────────────────────────────────────────────────────────────
   scroll_up:
     phrases:
       - scroll up
@@ -44,19 +281,57 @@ intents:
       - page down
     action: scroll_down
 
+  # ── Media / volume ─────────────────────────────────────────────────────────
+  play_pause:
+    phrases:
+      - play
+      - pause
+      - play pause
+      - toggle play
+    action: "xdotool key XF86AudioPlay"
+
+  volume_up:
+    phrases:
+      - volume up
+      - louder
+      - increase volume
+      - turn up
+    action: "xdotool key XF86AudioRaiseVolume"
+
+  volume_down:
+    phrases:
+      - volume down
+      - quieter
+      - decrease volume
+      - turn down
+      - lower volume
+    action: "xdotool key XF86AudioLowerVolume"
+
+  mute:
+    phrases:
+      - mute
+      - mute audio
+      - silence
+      - toggle mute
+    action: "xdotool key XF86AudioMute"
+
+  # ── Screenshot ─────────────────────────────────────────────────────────────
   take_screenshot:
     phrases:
       - take screenshot
       - screenshot
       - capture screen
       - snap screen
+      - grab screen
     action: "gnome-screenshot"
 
+  # ── Gesture control ────────────────────────────────────────────────────────
   pause_gestures:
     phrases:
       - pause gestures
       - stop gestures
       - disable gestures
+      - freeze gestures
     action: pause_gestures
 
   resume_gestures:
@@ -64,15 +339,14 @@ intents:
       - resume gestures
       - start gestures
       - enable gestures
+      - unfreeze gestures
     action: resume_gestures
 
-# Matching settings
+# ── Matching settings ────────────────────────────────────────────────────────
 matching:
   # Minimum similarity score (0.0–1.0) to accept a match.
-  # Below this threshold: report what was heard, take no action.
   confidence_threshold: 0.6
 
-  # Maximum words of silence/noise to ignore around the command.
-  # E.g. "um open browser" still matches "open browser".
+  # Filler words stripped from the start/end before matching.
   strip_fillers: true
-  filler_words: [um, uh, like, so, please, hey, okay, ok]
+  filler_words: [um, uh, like, so, please, hey, okay, ok, can you, could you]
