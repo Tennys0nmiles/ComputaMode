@@ -29,6 +29,7 @@ class Gesture(Enum):
     TAB_SWITCH = auto()
     RIGHT_CLICK = auto()
     PTT_RECORD = auto()
+    ZOOM = auto()
 
 
 def _dist(a, b):
@@ -141,9 +142,15 @@ class GestureClassifier:
             "ptt_dist": ptt_dist,
         }
 
-        # Priority: right click (mid pinch) > left click (index pinch) >
-        #           PTT record (thumb-pinky touch) > tab switch >
-        #           two-finger scroll > open palm > fist
+        # Priority: zoom (all 3 tips) > right click (mid pinch) >
+        #           left click (index pinch) > PTT record (thumb-pinky touch) >
+        #           tab switch > two-finger scroll > open palm > fist
+
+        # Zoom: thumb + index + middle tips all touching
+        # Must be checked before RIGHT_CLICK/PINCH since it subsumes both
+        if pinch_dist < self.pinch_threshold and mid_pinch_dist < self.pinch_threshold:
+            return self._stabilize(Gesture.ZOOM), debug
+
         if mid_pinch_dist < self.pinch_threshold:
             return self._stabilize(Gesture.RIGHT_CLICK), debug
 

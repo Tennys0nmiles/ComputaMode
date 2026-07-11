@@ -133,6 +133,7 @@ def main():
 
     ptt_was_active = False
     pinch_was_active = False
+    zoom_was_active = False
     right_click_was_active = False
     prev_gesture = Gesture.NONE
     scroll_prev_y = None
@@ -142,8 +143,8 @@ def main():
     tab_switch_last_fire = 0.0      # time of last tab press
     TAB_SWITCH_TEMPO = 0.45         # seconds between tab presses when tilted
     TAB_SWITCH_DEADZONE = 0.12      # fraction of spread to ignore (neutral zone)
-    pinch_zoom_anchor = None        # hand size when pinch started
-    pinch_zoom_step = 0             # cumulative zoom steps sent
+    zoom_anchor = None              # hand size when zoom started
+    zoom_step = 0                   # cumulative zoom steps sent
     swipe_prev_x = None             # previous palm x for velocity tracking
     swipe_prev_time = None          # timestamp of previous frame
     swipe_cooldown = 0.0            # cooldown after a swipe fires
@@ -205,32 +206,32 @@ def main():
                     scroll_prev_y = None
 
                 elif gesture == Gesture.PINCH:
-                    # Move cursor to pinch position
+                    # Move cursor and hold left button for drag/highlight
                     screen_x, screen_y = map_to_screen(
                         sx, sy, active_region, screen_w, screen_h)
                     mouse.move_to(screen_x, screen_y)
+                    if not pinch_was_active:
+                        mouse.press()
+                    scroll_prev_y = None
 
+                elif gesture == Gesture.ZOOM:
+                    # Three-finger pinch (thumb+index+middle tips): Ctrl+scroll zoom
                     # Hand size proxy: wrist (0) to middle MCP (9) distance
                     hand_size = math.sqrt(
                         (landmarks[0][0] - landmarks[9][0])**2 +
                         (landmarks[0][1] - landmarks[9][1])**2)
-
-                    if not pinch_was_active:
-                        # First frame of pinch: press and hold left button
-                        mouse.press()
-                        pinch_zoom_anchor = hand_size
-                        pinch_zoom_step = 0
+                    if not zoom_was_active:
+                        zoom_anchor = hand_size
+                        zoom_step = 0
                         mouse.key_press(ecodes.KEY_LEFTCTRL)
                     else:
-                        # Subsequent frames: track size change for zoom
-                        # Each 0.015 of size change = one scroll tick
-                        delta = hand_size - pinch_zoom_anchor
+                        delta = hand_size - zoom_anchor
                         new_step = int(delta / 0.015)
-                        steps_needed = new_step - pinch_zoom_step
+                        steps_needed = new_step - zoom_step
                         if steps_needed != 0:
                             for _ in range(abs(steps_needed)):
                                 mouse.scroll(1 if steps_needed > 0 else -1)
-                            pinch_zoom_step = new_step
+                            zoom_step = new_step
                     scroll_prev_y = None
 
                 elif gesture == Gesture.RIGHT_CLICK:
@@ -322,10 +323,14 @@ def main():
 
             if pinch_was_active and gesture != Gesture.PINCH:
                 mouse.release()
-                mouse.key_release(ecodes.KEY_LEFTCTRL)
-                pinch_zoom_anchor = None
-                pinch_zoom_step = 0
             pinch_was_active = (gesture == Gesture.PINCH)
+
+            if zoom_was_active and gesture != Gesture.ZOOM:
+                mouse.key_release(ecodes.KEY_LEFTCTRL)
+                zoom_anchor = None
+                zoom_step = 0
+            zoom_was_active = (gesture == Gesture.ZOOM)
+
             right_click_was_active = (gesture == Gesture.RIGHT_CLICK)
 
             # Handle custom shell command gesture
@@ -364,6 +369,7 @@ def main():
             mouse.key_release(ecodes.KEY_LEFTALT)
         if pinch_was_active:
             mouse.release()
+        if zoom_was_active:
             mouse.key_release(ecodes.KEY_LEFTCTRL)
         tracker.release()
         mouse.close()
