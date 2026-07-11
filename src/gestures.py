@@ -129,9 +129,10 @@ class GestureClassifier:
         fingers = [thumb_ext, index_ext, middle_ext, ring_ext, pinky_ext]
         extended_count = sum(fingers)
 
-        # Pinch distances: thumb tip to index tip / middle tip / pinky tip
+        # Pinch distances: thumb tip to index / middle / ring / pinky tips
         pinch_dist = _dist(landmarks[4], landmarks[8])
         mid_pinch_dist = _dist(landmarks[4], landmarks[12])
+        ring_pinch_dist = _dist(landmarks[4], landmarks[16])
         ptt_dist = _dist(landmarks[4], landmarks[20])
 
         debug = {
@@ -139,16 +140,16 @@ class GestureClassifier:
             "extended_count": extended_count,
             "pinch_dist": pinch_dist,
             "mid_pinch_dist": mid_pinch_dist,
+            "ring_pinch_dist": ring_pinch_dist,
             "ptt_dist": ptt_dist,
         }
 
-        # Priority: zoom (all 3 tips) > right click (mid pinch) >
-        #           left click (index pinch) > PTT record (thumb-pinky touch) >
+        # Priority: zoom (thumb+ring) > right click (thumb+middle) >
+        #           left click (thumb+index) > PTT record (thumb+pinky touch) >
         #           tab switch > two-finger scroll > open palm > fist
 
-        # Zoom: thumb + index + middle tips all touching
-        # Must be checked before RIGHT_CLICK/PINCH since it subsumes both
-        if pinch_dist < self.pinch_threshold and mid_pinch_dist < self.pinch_threshold:
+        # Zoom: thumb tip to ring finger tip
+        if ring_pinch_dist < self.pinch_threshold:
             return self._stabilize(Gesture.ZOOM), debug
 
         if mid_pinch_dist < self.pinch_threshold:

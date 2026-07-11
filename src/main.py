@@ -136,7 +136,6 @@ def main():
     zoom_was_active = False
     right_click_was_active = False
     prev_gesture = Gesture.NONE
-    scroll_prev_y = None
     tab_switch_active = False
     tab_switch_anchor_tilt = None   # tilt value when tab switch started
     tab_switch_anchor_spread = None # initial thumb-pinky 2D distance (for scaling)
@@ -148,6 +147,8 @@ def main():
     swipe_prev_x = None             # previous palm x for velocity tracking
     swipe_prev_time = None          # timestamp of previous frame
     swipe_cooldown = 0.0            # cooldown after a swipe fires
+    scroll_anchor_y = None          # y position when TWO_FINGER_SCROLL entered
+    scroll_last_fire = 0.0          # time of last scroll tick fired
     show_overlay = not args.no_overlay
 
     try:
@@ -203,7 +204,7 @@ def main():
                         screen_x, screen_y = map_to_screen(
                             sx, sy, active_region, screen_w, screen_h)
                         mouse.move_to(screen_x, screen_y)
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 elif gesture == Gesture.PINCH:
                     # Move cursor and hold left button for drag/highlight
@@ -212,7 +213,7 @@ def main():
                     mouse.move_to(screen_x, screen_y)
                     if not pinch_was_active:
                         mouse.press()
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 elif gesture == Gesture.ZOOM:
                     # Three-finger pinch (thumb+index+middle tips): Ctrl+scroll zoom
@@ -232,7 +233,7 @@ def main():
                             for _ in range(abs(steps_needed)):
                                 mouse.scroll(1 if steps_needed > 0 else -1)
                             zoom_step = new_step
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 elif gesture == Gesture.RIGHT_CLICK:
                     screen_x, screen_y = map_to_screen(
@@ -240,16 +241,24 @@ def main():
                     mouse.move_to(screen_x, screen_y)
                     if not right_click_was_active:
                         mouse.click(ecodes.BTN_RIGHT)
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 elif gesture == Gesture.TWO_FINGER_SCROLL:
-                    if scroll_prev_y is not None:
-                        delta = scroll_prev_y - sy  # up = positive scroll
-                        # Scale: small hand movement → reasonable scroll
-                        scroll_amount = delta * 50
-                        if abs(scroll_amount) > 0.5:
-                            mouse.scroll(int(scroll_amount))
-                    scroll_prev_y = sy
+                    now_s = time.time()
+                    if scroll_anchor_y is None:
+                        scroll_anchor_y = sy  # capture neutral position on entry
+                        scroll_last_fire = now_s
+
+                    offset = scroll_anchor_y - sy  # + = hand moved up = scroll up
+                    SCROLL_DEADZONE = 0.03          # ~3% of frame height, ignore jitter
+                    if abs(offset) > SCROLL_DEADZONE:
+                        # Speed: interval shrinks as offset grows (faster = more tilt)
+                        # 0.03 offset → 0.18s interval; 0.10+ offset → 0.06s interval
+                        t = min((abs(offset) - SCROLL_DEADZONE) / 0.07, 1.0)
+                        interval = 0.18 - t * 0.12
+                        if now_s - scroll_last_fire >= interval:
+                            mouse.scroll(1 if offset > 0 else -1)
+                            scroll_last_fire = now_s
 
                 elif gesture == Gesture.TAB_SWITCH:
                     # Track hand tilt via horizontal offset between
@@ -275,15 +284,19 @@ def main():
                         if abs(delta) > deadzone and now - tab_switch_last_fire >= TAB_SWITCH_TEMPO:
                             mouse.key_tap(ecodes.KEY_TAB)
                             tab_switch_last_fire = now
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 elif gesture == Gesture.FIST:
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
 
                 # Reset swipe tracking when not in open palm
                 if gesture != Gesture.OPEN_PALM:
                     swipe_prev_x = None
                     swipe_prev_time = None
+
+            # Reset scroll anchor when leaving two-finger scroll
+            if gesture != Gesture.TWO_FINGER_SCROLL:
+                scroll_anchor_y = None
 
             # Release Alt when leaving tab switch gesture
             if tab_switch_active and gesture != Gesture.TAB_SWITCH:
@@ -317,7 +330,7 @@ def main():
                 if prev_gesture != Gesture.FIST:
                     state["paused"] = True
                     smoother.reset()
-                    scroll_prev_y = None
+                    scroll_anchor_y = None
             elif state["paused"] and gesture == Gesture.OPEN_PALM:
                 state["paused"] = False
 
