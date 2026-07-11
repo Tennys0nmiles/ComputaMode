@@ -14,7 +14,7 @@ Three systems that work together:
 
 | Gesture | How to make it | Action |
 |---|---|---|
-| Open palm | All fingers extended | Move cursor; fast sideways flick = switch workspace |
+| Open palm | All fingers extended | Move cursor |
 | Pinch | Thumb tip to index tip | Hold left click (drag, highlight, select) |
 | Ring pinch | Thumb tip to ring finger tip | Ctrl+scroll zoom in/out (move hand closer/farther) |
 | Right click | Thumb tip to middle finger tip | Right click |
@@ -50,6 +50,7 @@ See **[VOICE_COMMANDS.txt](VOICE_COMMANDS.txt)** for the full list. Short versio
 - **Editing**: copy, paste, cut, undo, redo, select all, save, find
 - **Zoom**: zoom in, zoom out, reset zoom
 - **Apps**: open browser, open terminal, open files, open editor, open settings
+- **Workspaces**: next workspace, previous workspace
 - **Media**: play/pause, volume up/down, mute
 - **Scroll**: scroll up, scroll down
 - **Gestures**: pause gestures, resume gestures

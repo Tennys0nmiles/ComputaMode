@@ -142,17 +142,8 @@ def main():
     tab_switch_last_fire = 0.0      # time of last tab press
     TAB_SWITCH_TEMPO = 0.45         # seconds between tab presses when tilted
     TAB_SWITCH_DEADZONE = 0.12      # fraction of spread to ignore (neutral zone)
-    # Distance-adaptive cursor sensitivity.
-    # CURSOR_REF_SIZE: wrist-to-middle-MCP distance (normalized) at your normal
-    # comfortable distance from the webcam. Decrease if you sit far away and
-    # want the scaling to kick in sooner; increase if you sit very close.
-    CURSOR_REF_SIZE = 0.20
-    CURSOR_MAX_SCALE = 3.5          # hard cap so extreme distance isn't wild
     zoom_anchor = None              # hand size when zoom started
     zoom_step = 0                   # cumulative zoom steps sent
-    swipe_prev_x = None             # previous palm x for velocity tracking
-    swipe_prev_time = None          # timestamp of previous frame
-    swipe_cooldown = 0.0            # cooldown after a swipe fires
     scroll_anchor_y = None          # y position when TWO_FINGER_SCROLL entered
     scroll_last_fire = 0.0          # time of last scroll tick fired
     show_overlay = not args.no_overlay
@@ -175,57 +166,9 @@ def main():
                 sx, sy = smoother(palm_x, palm_y)
 
                 if gesture == Gesture.OPEN_PALM:
-                    now = time.time()
-
-                    # Distance-adaptive sensitivity: scale cursor movement
-                    # inversely with hand size so sitting far away doesn't
-                    # require large arm movements to cross the screen.
-                    hand_size = math.sqrt(
-                        (landmarks[0][0] - landmarks[9][0])**2 +
-                        (landmarks[0][1] - landmarks[9][1])**2)
-                    dist_scale = min(
-                        CURSOR_REF_SIZE / max(hand_size, 0.02),
-                        CURSOR_MAX_SCALE)
-                    # Scale palm position around the active region centre
-                    ar = active_region
-                    ar_cx = (ar[0] + ar[2]) / 2
-                    ar_cy = (ar[1] + ar[3]) / 2
-                    csx = ar_cx + (sx - ar_cx) * dist_scale
-                    csy = ar_cy + (sy - ar_cy) * dist_scale
-
-                    # Swipe uses raw velocity (unscaled) so threshold stays consistent
-                    swiped = False
-                    if swipe_prev_x is not None and swipe_prev_time is not None:
-                        dt = now - swipe_prev_time
-                        if dt > 0 and now > swipe_cooldown:
-                            velocity_x = (sx - swipe_prev_x) / dt
-                            # Threshold: ~3.0 normalized units/sec = deliberate flick
-                            if abs(velocity_x) > 3.0:
-                                if velocity_x > 0:
-                                    # Swipe right (mirrored) = previous workspace
-                                    mouse.key_press(ecodes.KEY_LEFTCTRL)
-                                    mouse.key_press(ecodes.KEY_LEFTALT)
-                                    mouse.key_tap(ecodes.KEY_LEFT)
-                                    mouse.key_release(ecodes.KEY_LEFTALT)
-                                    mouse.key_release(ecodes.KEY_LEFTCTRL)
-                                else:
-                                    # Swipe left (mirrored) = next workspace
-                                    mouse.key_press(ecodes.KEY_LEFTCTRL)
-                                    mouse.key_press(ecodes.KEY_LEFTALT)
-                                    mouse.key_tap(ecodes.KEY_RIGHT)
-                                    mouse.key_release(ecodes.KEY_LEFTALT)
-                                    mouse.key_release(ecodes.KEY_LEFTCTRL)
-                                swiped = True
-                                swipe_cooldown = now + 0.8  # prevent rapid re-trigger
-                                smoother.reset()
-
-                    swipe_prev_x = sx
-                    swipe_prev_time = now
-
-                    if not swiped:
-                        screen_x, screen_y = map_to_screen(
-                            csx, csy, active_region, screen_w, screen_h)
-                        mouse.move_to(screen_x, screen_y)
+                    screen_x, screen_y = map_to_screen(
+                        sx, sy, active_region, screen_w, screen_h)
+                    mouse.move_to(screen_x, screen_y)
                     scroll_anchor_y = None
 
                 elif gesture == Gesture.PINCH:
@@ -311,10 +254,6 @@ def main():
                 elif gesture == Gesture.FIST:
                     scroll_anchor_y = None
 
-                # Reset swipe tracking when not in open palm
-                if gesture != Gesture.OPEN_PALM:
-                    swipe_prev_x = None
-                    swipe_prev_time = None
 
             # Reset scroll anchor when leaving two-finger scroll
             if gesture != Gesture.TWO_FINGER_SCROLL:

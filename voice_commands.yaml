@@ -315,6 +315,24 @@ intents:
       - toggle mute
     action: "xdotool key XF86AudioMute"
 
+  # ── Workspace switching ────────────────────────────────────────────────────
+  workspace_left:
+    phrases:
+      - previous workspace
+      - workspace left
+      - last workspace
+      - switch workspace left
+      - go to previous workspace
+    action: "xdotool key ctrl+alt+Left"
+
+  workspace_right:
+    phrases:
+      - next workspace
+      - workspace right
+      - switch workspace right
+      - go to next workspace
+    action: "xdotool key ctrl+alt+Right"
+
   # ── Screenshot ─────────────────────────────────────────────────────────────
   take_screenshot:
     phrases:

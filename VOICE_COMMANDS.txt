@@ -92,6 +92,12 @@ MEDIA / VOLUME
 "mute"                  → media mute key
 
 ────────────────────────────────────────────────────────
+WORKSPACE
+────────────────────────────────────────────────────────
+"next workspace"        → Ctrl+Alt+→
+"previous workspace"    → Ctrl+Alt+←
+
+────────────────────────────────────────────────────────
 SCREENSHOT
 ────────────────────────────────────────────────────────
 "take screenshot"       → gnome-screenshot
