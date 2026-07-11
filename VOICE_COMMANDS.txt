@@ -7,6 +7,23 @@ Chain:    say "and" / "then" / "also" between commands to run multiple.
 Requires: xdotool  →  sudo apt install xdotool
 
 ────────────────────────────────────────────────────────
+VOICE TYPING  (dictation mode)
+────────────────────────────────────────────────────────
+"write [text]"          → types the text at current cursor position
+"type [text]"           → same
+"dictate [text]"        → same
+"input [text]"          → same
+
+Examples:
+  "write hello world"           → types: hello world
+  "write dear John comma"       → types: dear John,  (punctuation spoken)
+  "type print open paren x"     → types: print(x
+
+Note: everything after the trigger word is typed verbatim — "and", "then"
+etc. are NOT treated as command separators in dictation mode.
+Uses xdotool type — keys go to whatever window is currently focused.
+
+────────────────────────────────────────────────────────
 APP LAUNCHING
 ────────────────────────────────────────────────────────
 "open browser"          → xdg-open https://google.com

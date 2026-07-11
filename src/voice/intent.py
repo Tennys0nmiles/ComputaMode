@@ -10,6 +10,7 @@ Fallback hook:
 
 import difflib
 import re
+import shlex
 from typing import List, Optional, Tuple
 
 import yaml
@@ -95,26 +96,42 @@ class IntentMatcher:
 
         return None, best_score, best_phrase
 
+    # Dictation trigger: "write ..." / "type ..." → type the remainder verbatim
+    # Checked before chain splitting so "write hello and goodbye" types the full phrase.
+    _DICTATE_PREFIX = re.compile(
+        r'^(?:write|type|dictate|input)\s+(.+)$', re.IGNORECASE
+    )
+
     # Words that join chained commands: "close tab and open terminal"
     _CHAIN_SPLIT = re.compile(
         r'\b(?:and then|after that|and also|and|then|also|next)\b'
     )
 
     def match_all(self, text: str) -> List[Tuple[Optional[str], float, str]]:
-        """Split on chain words and match each segment independently.
+        """Detect dictation or split on chain words and match each segment.
 
-        Returns a list of (action, score, phrase) for every segment that
-        matches above the confidence threshold.  Unmatched segments are
-        silently skipped.
+        Dictation mode: if text starts with "write"/"type"/"dictate"/"input",
+        the remainder is typed verbatim at the cursor via xdotool type.
+        This bypasses intent matching and chain splitting entirely so that
+        "write hello and goodbye" types "hello and goodbye" as-is.
 
-        Example:
-            "select all and copy then paste"
-            → [("xdotool key ctrl+a", ...), ("xdotool key ctrl+c", ...),
-               ("xdotool key ctrl+v", ...)]
+        Command mode: split on "and/then/also/after that" and match each
+        segment against the intent list. Unmatched segments are skipped.
+
+        Returns a list of (action, score, phrase).
         """
-        segments = [s.strip() for s in self._CHAIN_SPLIT.split(text) if s.strip()]
+        text = text.strip()
 
-        # If no split happened (single command), avoid double-processing
+        # Dictation takes priority over everything else
+        m = self._DICTATE_PREFIX.match(text)
+        if m:
+            content = m.group(1).strip()
+            if content:
+                action = f"xdotool type --clearmodifiers -- {shlex.quote(content)}"
+                return [(action, 1.0, f"dictate: {content}")]
+            return []
+
+        segments = [s.strip() for s in self._CHAIN_SPLIT.split(text) if s.strip()]
         if not segments:
             segments = [text]
 

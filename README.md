@@ -32,7 +32,13 @@ When you enter two-finger scroll, the Y position at that moment becomes your neu
 
 Activate: hold thumb tip to pinky tip while speaking, then release.
 
-Chains are supported — say **"and"**, **"then"**, or **"also"** between commands:
+**Voice typing**: start with "write", "type", "dictate", or "input" and everything after is typed at the cursor:
+> "write hello world" → types `hello world`
+> "write dear John," → types `dear John,`
+
+Since dictation mode is checked first, "and"/"then" inside the text are typed as-is, not treated as command separators.
+
+**Chains** — say **"and"**, **"then"**, or **"also"** between commands:
 > "select all and copy" → Ctrl+A then Ctrl+C
 > "close tab then go back" → Ctrl+W then Alt+←
 
