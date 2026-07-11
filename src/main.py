@@ -147,7 +147,7 @@ def main():
                 print("Loading Piper TTS voice...")
                 _tts = TTSEngine(str(_model_path))
                 _brain = AssistantBrain(
-                    model=_llm_cfg.get("model", "qwen3:4b"),
+                    model=_llm_cfg.get("model", ""),
                     base_url=_llm_cfg.get("base_url", "http://localhost:11434"),
                     max_history_turns=_llm_cfg.get("max_history_turns", 4),
                     temperature=_llm_cfg.get("temperature", 0.7),
@@ -156,7 +156,8 @@ def main():
                         "Answer in 1-2 sentences."),
                 )
                 _router_mod.init(_brain, _tts)
-                print("Assistant ready (Nova / qwen3:4b). Ask me anything.")
+                _llm_model = _llm_cfg.get("model", "")
+                print(f"Assistant ready (Nova / {_llm_model}). Ask me anything.")
         except Exception as exc:
             print(f"Assistant unavailable: {exc}")
 

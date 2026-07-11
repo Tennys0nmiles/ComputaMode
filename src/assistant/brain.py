@@ -22,7 +22,7 @@ def _strip_think(text: str) -> str:
 class AssistantBrain:
     def __init__(
         self,
-        model: str = "qwen3:4b",
+        model: str = "",  # always set from voice_commands.yaml; no default here
         base_url: str = "http://localhost:11434",
         max_history_turns: int = 4,
         temperature: float = 0.7,

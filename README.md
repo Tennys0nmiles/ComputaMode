@@ -138,28 +138,46 @@ python3 -c "import evdev; d = evdev.UInput(); d.close(); print('uinput OK')"
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-**Run the assistant setup script** — downloads the Piper voice model and
-pulls the Ollama model (both one-time, needs internet):
+**Run the unified setup script** — detects your hardware, recommends a model,
+pulls it, and downloads the Piper voice model (one-time, needs internet):
 ```bash
-./setup_assistant.sh
-# For the smaller/faster voice: ./setup_assistant.sh --voice amy-medium
+./setup.sh
+# Force a specific model:   ./setup.sh --model llama3.2:3b
+# Smaller/faster TTS voice: ./setup.sh --voice amy-medium
 ```
 
-This downloads:
-- `models/piper/en_US-lessac-high.onnx` (~109 MB, high-quality female voice)
-- `qwen3:4b` via Ollama (~2.6 GB, local LLM)
+The script is safe to re-run; it skips steps already completed.
 
-After setup, everything runs **fully offline**. To skip the assistant at
-runtime: `./run.sh --no-assistant`
+#### Choosing your model
 
-**Swap voice or model** — edit `voice_commands.yaml` under `assistant:`:
+The script detects your hardware and recommends a model automatically.
+If you want to choose manually, use this table:
+
+| Hardware | Recommended model | Size | Notes |
+|---|---|---|---|
+| GPU ≥ 8 GB VRAM | `qwen3:4b` | ~2.6 GB | Best quality |
+| CPU-only, ≥ 10 GB free RAM | `qwen3:4b` | ~2.6 GB | Good quality |
+| CPU-only, 6–9 GB free RAM | `llama3.2:3b` | ~2.0 GB | Fast, good quality |
+| CPU-only, ≤ 5 GB free RAM | `llama3.2:1b` | ~1.3 GB | Minimal, faster |
+
+Check your free RAM:
+```bash
+free -h        # look at the "available" column
+nvidia-smi     # NVIDIA GPU VRAM
+```
+
+The model name lives **only** in `voice_commands.yaml` under `assistant.llm.model`.
+To swap later, edit that file directly:
 ```yaml
 assistant:
   llm:
-    model: llama3.2:3b      # faster, slightly weaker quality
+    model: llama3.2:3b      # change this line
   tts:
-    model_path: models/piper/en_US-amy-medium.onnx
+    model_path: models/piper/en_US-amy-medium.onnx   # optional: smaller voice
 ```
+
+After setup, everything runs **fully offline**. To skip the assistant at
+runtime: `./run.sh --no-assistant`
 
 ### 8. Run calibration (recommended)
 
