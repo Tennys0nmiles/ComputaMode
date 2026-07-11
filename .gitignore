@@ -6,6 +6,11 @@ __pycache__/
 # MediaPipe model cache
 mediapipe/
 
+# Whisper model cache (downloaded per-machine, ~74 MB)
+# Default location: ~/.cache/huggingface/hub/
+# If ever stored locally:
+faster_whisper_models/
+
 # Device-local calibration data (per-machine, never commit)
 calibration/*.json
 

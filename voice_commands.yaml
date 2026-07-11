@@ -1,0 +1,78 @@
+# Voice Commands Configuration
+# Each intent has a list of phrases (synonyms/variations) and an action.
+#
+# Actions:
+#   Built-in keywords : scroll_up, scroll_down, left_click, right_click,
+#                       pause_gestures, resume_gestures
+#   Anything else     : executed as a shell command
+#
+# Fuzzy matching handles minor transcription errors automatically.
+# If nothing matches confidently the system reports what it heard and does nothing.
+
+intents:
+  open_browser:
+    phrases:
+      - open browser
+      - launch browser
+      - open firefox
+      - launch firefox
+      - open chrome
+      - go to browser
+    action: "xdg-open https://google.com"
+
+  open_terminal:
+    phrases:
+      - open terminal
+      - launch terminal
+      - new terminal
+      - open console
+    action: "gnome-terminal"
+
+  scroll_up:
+    phrases:
+      - scroll up
+      - move up
+      - go up
+      - page up
+    action: scroll_up
+
+  scroll_down:
+    phrases:
+      - scroll down
+      - move down
+      - go down
+      - page down
+    action: scroll_down
+
+  take_screenshot:
+    phrases:
+      - take screenshot
+      - screenshot
+      - capture screen
+      - snap screen
+    action: "gnome-screenshot"
+
+  pause_gestures:
+    phrases:
+      - pause gestures
+      - stop gestures
+      - disable gestures
+    action: pause_gestures
+
+  resume_gestures:
+    phrases:
+      - resume gestures
+      - start gestures
+      - enable gestures
+    action: resume_gestures
+
+# Matching settings
+matching:
+  # Minimum similarity score (0.0–1.0) to accept a match.
+  # Below this threshold: report what was heard, take no action.
+  confidence_threshold: 0.6
+
+  # Maximum words of silence/noise to ignore around the command.
+  # E.g. "um open browser" still matches "open browser".
+  strip_fillers: true
+  filler_words: [um, uh, like, so, please, hey, okay, ok]

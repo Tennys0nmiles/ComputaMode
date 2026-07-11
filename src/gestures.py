@@ -28,6 +28,7 @@ class Gesture(Enum):
     TWO_FINGER_SCROLL = auto()
     TAB_SWITCH = auto()
     RIGHT_CLICK = auto()
+    PTT_RECORD = auto()
 
 
 def _dist(a, b):
@@ -71,7 +72,7 @@ class GestureClassifier:
     """Classifies hand gestures from 21 landmarks."""
 
     def __init__(self, pinch_threshold=0.05, fist_open_threshold=3,
-                 stability_frames=3):
+                 stability_frames=3, ptt_threshold=0.07):
         """
         Args:
             pinch_threshold: Max distance between thumb tip and index tip
@@ -80,13 +81,21 @@ class GestureClassifier:
                 as an open palm.
             stability_frames: Number of consecutive frames a new gesture must
                 be seen before switching. Prevents flicker between gestures.
+            ptt_threshold: Max distance between thumb tip and pinky tip
+                (normalized coords) to trigger push-to-talk recording.
         """
         self.pinch_threshold = pinch_threshold
         self.fist_open_threshold = fist_open_threshold
         self.stability_frames = stability_frames
+        self.ptt_threshold = ptt_threshold
         self._raw_prev = Gesture.NONE
         self._raw_count = 0
         self._stable_gesture = Gesture.NONE
+
+    @property
+    def raw_gesture(self):
+        """The current unfiltered gesture (before stability filter)."""
+        return self._raw_prev
 
     def _stabilize(self, raw_gesture):
         """Require a gesture to persist for N frames before switching."""
@@ -119,27 +128,33 @@ class GestureClassifier:
         fingers = [thumb_ext, index_ext, middle_ext, ring_ext, pinky_ext]
         extended_count = sum(fingers)
 
-        # Pinch distances: thumb tip to index tip / middle tip
+        # Pinch distances: thumb tip to index tip / middle tip / pinky tip
         pinch_dist = _dist(landmarks[4], landmarks[8])
         mid_pinch_dist = _dist(landmarks[4], landmarks[12])
+        ptt_dist = _dist(landmarks[4], landmarks[20])
 
         debug = {
             "fingers": fingers,
             "extended_count": extended_count,
             "pinch_dist": pinch_dist,
             "mid_pinch_dist": mid_pinch_dist,
+            "ptt_dist": ptt_dist,
         }
 
         # Priority: right click (mid pinch) > left click (index pinch) >
-        #           tab switch > two-finger scroll > open palm > fist
-        # Check middle-finger pinch first so it doesn't get eaten by index pinch
+        #           PTT record (thumb-pinky touch) > tab switch >
+        #           two-finger scroll > open palm > fist
         if mid_pinch_dist < self.pinch_threshold:
             return self._stabilize(Gesture.RIGHT_CLICK), debug
 
         if pinch_dist < self.pinch_threshold:
             return self._stabilize(Gesture.PINCH), debug
 
-        # Shaka: thumb + pinky extended, index + middle + ring curled
+        # PTT: thumb tip touches pinky tip (thumb-pinky touch, not extended apart)
+        if ptt_dist < self.ptt_threshold:
+            return self._stabilize(Gesture.PTT_RECORD), debug
+
+        # Shaka: thumb + pinky extended AND apart, index + middle + ring curled
         if thumb_ext and pinky_ext and not index_ext and not middle_ext and not ring_ext:
             return self._stabilize(Gesture.TAB_SWITCH), debug
 

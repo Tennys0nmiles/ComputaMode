@@ -10,7 +10,9 @@ import argparse
 import math
 import os
 import subprocess
+import threading
 import time
+from pathlib import Path
 
 import cv2
 
@@ -21,6 +23,7 @@ from evdev import ecodes
 from src.injector import VirtualMouse
 from src.calibration import load_calibration, run_calibration
 from src.config import load_config
+from src.dispatcher import ActionDispatcher
 
 
 def get_screen_resolution():
@@ -56,6 +59,8 @@ def main():
                         help="Run calibration before starting")
     parser.add_argument("--no-overlay", action="store_true",
                         help="Hide the camera overlay window")
+    parser.add_argument("--no-voice", action="store_true",
+                        help="Disable voice command layer (skip Whisper load)")
     args = parser.parse_args()
 
     config = load_config()
@@ -99,10 +104,34 @@ def main():
     )
     mouse = VirtualMouse(screen_w, screen_h)
 
-    print("Hand gesture control active. Press 'q' in overlay to quit.")
-    print("Gestures: OPEN_PALM=move, PINCH=click, FIST=pause, SHAKA=alt-tab")
+    # Shared mutable state (allows dispatcher to toggle paused)
+    state = {"paused": False}
+    dispatcher = ActionDispatcher(mouse, state)
 
-    paused = False
+    # Voice command layer (optional)
+    voice_enabled = not args.no_voice
+    ptt_recorder = None
+    voice_matcher = None
+    if voice_enabled:
+        try:
+            from src.voice.listener import PTTRecorder
+            from src.voice.transcriber import transcribe, preload
+            from src.voice.intent import IntentMatcher
+            CONFIG_PATH = Path(__file__).resolve().parent.parent / "voice_commands.yaml"
+            print("Loading Whisper model (downloads ~74 MB on first run)...")
+            preload()
+            voice_matcher = IntentMatcher(str(CONFIG_PATH))
+            ptt_recorder = PTTRecorder()
+            print("Voice commands ready. Touch thumb to pinky tip to record.")
+        except Exception as exc:
+            print(f"Voice layer unavailable: {exc}")
+            voice_enabled = False
+
+    print("Hand gesture control active. Press 'q' in overlay to quit.")
+    print("Gestures: OPEN_PALM=move, PINCH=drag, FIST=pause, SHAKA=alt-tab, "
+          "THUMB+PINKY=voice PTT")
+
+    ptt_was_active = False
     pinch_was_active = False
     right_click_was_active = False
     prev_gesture = Gesture.NONE
@@ -110,7 +139,9 @@ def main():
     tab_switch_active = False
     tab_switch_anchor_tilt = None   # tilt value when tab switch started
     tab_switch_anchor_spread = None # initial thumb-pinky 2D distance (for scaling)
-    tab_switch_step = 0             # which tab position we're at
+    tab_switch_last_fire = 0.0      # time of last tab press
+    TAB_SWITCH_TEMPO = 0.45         # seconds between tab presses when tilted
+    TAB_SWITCH_DEADZONE = 0.12      # fraction of spread to ignore (neutral zone)
     pinch_zoom_anchor = None        # hand size when pinch started
     pinch_zoom_step = 0             # cumulative zoom steps sent
     swipe_prev_x = None             # previous palm x for velocity tracking
@@ -131,7 +162,7 @@ def main():
             landmarks = tracker.get_landmarks(results)
             gesture, debug = classifier.classify(landmarks)
 
-            if landmarks and not paused:
+            if landmarks and not state["paused"]:
                 palm_x, palm_y = classifier.palm_center(landmarks)
                 sx, sy = smoother(palm_x, palm_y)
 
@@ -185,8 +216,8 @@ def main():
                         (landmarks[0][1] - landmarks[9][1])**2)
 
                     if not pinch_was_active:
-                        # First frame of pinch: click and set zoom anchor
-                        mouse.click()
+                        # First frame of pinch: press and hold left button
+                        mouse.press()
                         pinch_zoom_anchor = hand_size
                         pinch_zoom_step = 0
                         mouse.key_press(ecodes.KEY_LEFTCTRL)
@@ -234,19 +265,15 @@ def main():
                         tab_switch_active = True
                         tab_switch_anchor_tilt = tilt
                         tab_switch_anchor_spread = max(spread, 0.01)
-                        tab_switch_step = 0
-                    else:
-                        # Normalize tilt change by initial spread so each
-                        # tab switch is a consistent fraction of rotation.
-                        # ~15% of the initial spread = one tab switch.
+                        tab_switch_last_fire = time.time()
+                    elif classifier.raw_gesture == Gesture.TAB_SWITCH:
+                        # Only cycle while raw gesture is still shaka
                         delta = tilt - tab_switch_anchor_tilt
-                        step_size = tab_switch_anchor_spread * 0.15
-                        new_step = int(delta / step_size)
-                        steps_needed = new_step - tab_switch_step
-                        if steps_needed != 0:
-                            for _ in range(abs(steps_needed)):
-                                mouse.key_tap(ecodes.KEY_TAB)
-                            tab_switch_step = new_step
+                        deadzone = tab_switch_anchor_spread * TAB_SWITCH_DEADZONE
+                        now = time.time()
+                        if abs(delta) > deadzone and now - tab_switch_last_fire >= TAB_SWITCH_TEMPO:
+                            mouse.key_tap(ecodes.KEY_TAB)
+                            tab_switch_last_fire = now
                     scroll_prev_y = None
 
                 elif gesture == Gesture.FIST:
@@ -263,17 +290,38 @@ def main():
                 tab_switch_active = False
                 tab_switch_anchor_tilt = None
                 tab_switch_anchor_spread = None
-                tab_switch_step = 0
+                tab_switch_last_fire = 0.0
+
+            # PTT: voice recording (works regardless of paused state)
+            if voice_enabled and ptt_recorder is not None:
+                if gesture == Gesture.PTT_RECORD:
+                    if not ptt_was_active:
+                        ptt_recorder.start_recording()
+                elif ptt_was_active:
+                    # Just released PTT — transcribe + dispatch in background
+                    audio = ptt_recorder.stop_recording()
+                    if len(audio) >= 1600:
+                        def _voice_task(audio_data):
+                            text = transcribe(audio_data)
+                            if text:
+                                action, score, phrase = voice_matcher.match(text)
+                                if action:
+                                    dispatcher.execute(action)
+                        threading.Thread(
+                            target=_voice_task, args=(audio,), daemon=True
+                        ).start()
+                ptt_was_active = (gesture == Gesture.PTT_RECORD)
 
             if gesture == Gesture.FIST:
                 if prev_gesture != Gesture.FIST:
-                    paused = True
+                    state["paused"] = True
                     smoother.reset()
                     scroll_prev_y = None
-            elif paused and gesture == Gesture.OPEN_PALM:
-                paused = False
+            elif state["paused"] and gesture == Gesture.OPEN_PALM:
+                state["paused"] = False
 
             if pinch_was_active and gesture != Gesture.PINCH:
+                mouse.release()
                 mouse.key_release(ecodes.KEY_LEFTCTRL)
                 pinch_zoom_anchor = None
                 pinch_zoom_step = 0
@@ -299,8 +347,8 @@ def main():
             # Overlay window
             if show_overlay:
                 tracker.draw_landmarks(frame, results)
-                status = "PAUSED" if paused else gesture.name
-                color = (0, 0, 255) if paused else (0, 255, 0)
+                status = "PAUSED" if state["paused"] else gesture.name
+                color = (0, 0, 255) if state["paused"] else (0, 255, 0)
                 cv2.putText(frame, status, (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
                 cv2.imshow("Hand Gesture Control", frame)
@@ -315,6 +363,7 @@ def main():
         if tab_switch_active:
             mouse.key_release(ecodes.KEY_LEFTALT)
         if pinch_was_active:
+            mouse.release()
             mouse.key_release(ecodes.KEY_LEFTCTRL)
         tracker.release()
         mouse.close()
