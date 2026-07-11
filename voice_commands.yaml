@@ -360,6 +360,31 @@ intents:
       - unfreeze gestures
     action: resume_gestures
 
+# ── Stage 3: conversational assistant ────────────────────────────────────────
+assistant:
+  enabled: true
+
+  llm:
+    # Local Ollama model — swap to llama3.2:3b for ~1-2s faster responses
+    # at the cost of noticeably weaker conversational quality.
+    model: qwen3:4b
+    base_url: http://localhost:11434
+    max_history_turns: 4      # how many back-and-forth turns to keep in context
+    temperature: 0.7
+
+  tts:
+    # Path to the Piper voice model.  Relative paths are resolved from the
+    # repo root.  Run setup_assistant.sh to download the model file.
+    model_path: models/piper/en_US-lessac-high.onnx
+    # Alternatives (download via setup_assistant.sh --voice <name>):
+    #   models/piper/en_US-amy-medium.onnx   — smaller (~11 MB), faster, more synthetic
+
+  persona: >
+    You are Nova, a helpful and concise female assistant.
+    Answer in 1-2 sentences unless the user explicitly asks you to elaborate.
+    Never describe, narrate, or repeat back computer actions — those are
+    handled separately and silently.
+
 # ── Matching settings ────────────────────────────────────────────────────────
 matching:
   # Minimum similarity score (0.0–1.0) to accept a match.

@@ -37,11 +37,21 @@ def _similarity(a: str, b: str) -> float:
 
 
 def fallback_interpreter(text: str) -> Optional[str]:
-    """No-op fallback for unmatched commands.
+    """Route unmatched speech to the Stage 3 conversational assistant.
 
-    Return an action string to execute, or None to do nothing.
-    Replace this function body with an Ollama call when ready.
+    Speaks a response via TTS as a side effect (runs in the background
+    voice-task thread so the gesture loop is never blocked).
+    Returns None so the dispatcher executes nothing — the assistant only
+    talks, it never triggers system actions.
+
+    Degrades gracefully: if Stage 3 isn't installed or Ollama is down,
+    this silently returns None and Stage 2 command handling is unaffected.
     """
+    try:
+        from src.assistant.router import handle_conversational
+        handle_conversational(text)
+    except Exception:
+        pass
     return None
 
 

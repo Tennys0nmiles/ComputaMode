@@ -7,6 +7,7 @@ Three systems that work together:
 - **[computa-mode/](computa-mode/)** — Voice-activated theme, app launcher, and workspace manager. Say "computa activate" to apply a cyberpunk theme, launch apps, and start hand gesture control.
 - **Hand gesture control** — Webcam-based cursor control and system actions using MediaPipe Hands + kernel uinput. Works on Wayland and X11.
 - **Voice command layer** — Fully offline push-to-talk voice commands using faster-whisper (Whisper base.en). Triggered by a hand gesture, no internet required.
+- **Conversational assistant (Nova)** — Fully offline voice assistant powered by Piper TTS (female voice) + Ollama LLM (qwen3:4b). Ask questions, get spoken answers. Computer commands still execute silently — the assistant only speaks for conversation.
 
 ---
 
@@ -130,7 +131,37 @@ source venv/bin/activate
 python3 -c "import evdev; d = evdev.UInput(); d.close(); print('uinput OK')"
 ```
 
-### 6. Run calibration (recommended)
+### 6. Set up the conversational assistant (Stage 3 — optional)
+
+**Install Ollama** (one-time, needs internet):
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**Run the assistant setup script** — downloads the Piper voice model and
+pulls the Ollama model (both one-time, needs internet):
+```bash
+./setup_assistant.sh
+# For the smaller/faster voice: ./setup_assistant.sh --voice amy-medium
+```
+
+This downloads:
+- `models/piper/en_US-lessac-high.onnx` (~109 MB, high-quality female voice)
+- `qwen3:4b` via Ollama (~2.6 GB, local LLM)
+
+After setup, everything runs **fully offline**. To skip the assistant at
+runtime: `./run.sh --no-assistant`
+
+**Swap voice or model** — edit `voice_commands.yaml` under `assistant:`:
+```yaml
+assistant:
+  llm:
+    model: llama3.2:3b      # faster, slightly weaker quality
+  tts:
+    model_path: models/piper/en_US-amy-medium.onnx
+```
+
+### 8. Run calibration (recommended)
 
 Calibration samples your hand + lighting to set gesture detection thresholds
 instead of using hardcoded defaults.
@@ -141,7 +172,7 @@ instead of using hardcoded defaults.
 
 This saves thresholds to `calibration/thresholds.json` (device-local, gitignored).
 
-### 7. Run
+### 9. Run
 
 ```bash
 ./run.sh
@@ -152,6 +183,7 @@ Options:
 - `--no-overlay` — hide the camera preview window
 - `--camera N` — use a different camera index (default: 0)
 - `--no-voice` — skip Whisper model load (faster startup, no PTT)
+- `--no-assistant` — skip Piper/Ollama load (voice commands still work)
 
 ---
 
@@ -179,6 +211,7 @@ Built-in action keywords: `scroll_up`, `scroll_down`, `left_click`, `right_click
 ```
 ├── run.sh                  # Entry point
 ├── setup_permissions.sh    # udev + group setup (run once per machine)
+├── setup_assistant.sh      # Download Piper voice + check Ollama (run once)
 ├── config.yaml             # Gesture mapping + tuning
 ├── voice_commands.yaml     # Voice intent → action mapping
 ├── VOICE_COMMANDS.txt      # Human-readable voice command reference
@@ -196,7 +229,15 @@ Built-in action keywords: `scroll_up`, `scroll_down`, `left_click`, `right_click
 │   ├── config.py           # YAML config loader
 │   ├── demo_voice.py       # Interactive voice pipeline test
 │   ├── demo_mic.py         # Microphone capture test
-│   └── voice/
+│   ├── voice/
+│   │   ├── transcriber.py  # faster-whisper wrapper
+│   │   ├── intent.py       # Fuzzy intent matcher + chaining
+│   │   └── listener.py     # PTT mic recorder (sounddevice)
+│   └── assistant/
+│       ├── tts.py          # Piper TTS engine
+│       ├── brain.py        # Ollama LLM client + conversation history
+│       ├── sysinfo.py      # psutil system info (battery, CPU, RAM…)
+│       └── router.py       # sysinfo fast-path + LLM routing
 │       ├── transcriber.py  # faster-whisper wrapper
 │       ├── intent.py       # Fuzzy intent matcher + chaining
 │       └── listener.py     # PTT mic recorder (sounddevice)
@@ -224,3 +265,5 @@ Built-in action keywords: `scroll_up`, `scroll_down`, `left_click`, `right_click
 - `faster_whisper_models/` — Whisper model cache (if stored locally)
 - `computa-mode/venv/`
 - `computa-mode/voice_profile.npy` — speaker enrollment data
+- `models/piper/` — Piper voice model files (download via `setup_assistant.sh`)
+- Ollama models live in `~/.ollama/` outside the repo

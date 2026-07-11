@@ -11,6 +11,9 @@ mediapipe/
 # If ever stored locally:
 faster_whisper_models/
 
+# Piper TTS voice models (downloaded per-machine via setup_assistant.sh)
+models/piper/
+
 # Device-local calibration data (per-machine, never commit)
 calibration/*.json
 

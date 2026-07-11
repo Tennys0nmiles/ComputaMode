@@ -61,6 +61,8 @@ def main():
                         help="Hide the camera overlay window")
     parser.add_argument("--no-voice", action="store_true",
                         help="Disable voice command layer (skip Whisper load)")
+    parser.add_argument("--no-assistant", action="store_true",
+                        help="Disable conversational assistant (skip Ollama/Piper load)")
     args = parser.parse_args()
 
     config = load_config()
@@ -126,6 +128,37 @@ def main():
         except Exception as exc:
             print(f"Voice layer unavailable: {exc}")
             voice_enabled = False
+
+    # Conversational assistant (Stage 3, optional)
+    if voice_enabled and not args.no_assistant:
+        try:
+            import yaml as _yaml
+            _cfg_path = Path(__file__).resolve().parent.parent / "voice_commands.yaml"
+            _vcfg = _yaml.safe_load(_cfg_path.read_text()).get("assistant", {})
+            if _vcfg.get("enabled", True):
+                from src.assistant.tts import TTSEngine
+                from src.assistant.brain import AssistantBrain
+                from src.assistant import router as _router_mod
+                _repo_root = Path(__file__).resolve().parent.parent
+                _tts_cfg = _vcfg.get("tts", {})
+                _model_path = _repo_root / _tts_cfg.get("model_path",
+                                                          "models/piper/en_US-lessac-high.onnx")
+                _llm_cfg = _vcfg.get("llm", {})
+                print("Loading Piper TTS voice...")
+                _tts = TTSEngine(str(_model_path))
+                _brain = AssistantBrain(
+                    model=_llm_cfg.get("model", "qwen3:4b"),
+                    base_url=_llm_cfg.get("base_url", "http://localhost:11434"),
+                    max_history_turns=_llm_cfg.get("max_history_turns", 4),
+                    temperature=_llm_cfg.get("temperature", 0.7),
+                    persona=_vcfg.get("persona",
+                        "You are Nova, a helpful concise female assistant. "
+                        "Answer in 1-2 sentences."),
+                )
+                _router_mod.init(_brain, _tts)
+                print("Assistant ready (Nova / qwen3:4b). Ask me anything.")
+        except Exception as exc:
+            print(f"Assistant unavailable: {exc}")
 
     print("Hand gesture control active. Press 'q' in overlay to quit.")
     print("Gestures: OPEN_PALM=move, PINCH=drag, FIST=pause, SHAKA=alt-tab, "

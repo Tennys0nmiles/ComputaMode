@@ -5,3 +5,6 @@ PyYAML==6.0.2
 numpy==1.26.4
 faster-whisper
 sounddevice
+piper-tts
+psutil
+requests
