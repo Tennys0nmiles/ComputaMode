@@ -142,6 +142,12 @@ def main():
     tab_switch_last_fire = 0.0      # time of last tab press
     TAB_SWITCH_TEMPO = 0.45         # seconds between tab presses when tilted
     TAB_SWITCH_DEADZONE = 0.12      # fraction of spread to ignore (neutral zone)
+    # Distance-adaptive cursor sensitivity.
+    # CURSOR_REF_SIZE: wrist-to-middle-MCP distance (normalized) at your normal
+    # comfortable distance from the webcam. Decrease if you sit far away and
+    # want the scaling to kick in sooner; increase if you sit very close.
+    CURSOR_REF_SIZE = 0.20
+    CURSOR_MAX_SCALE = 3.5          # hard cap so extreme distance isn't wild
     zoom_anchor = None              # hand size when zoom started
     zoom_step = 0                   # cumulative zoom steps sent
     swipe_prev_x = None             # previous palm x for velocity tracking
@@ -171,7 +177,23 @@ def main():
                 if gesture == Gesture.OPEN_PALM:
                     now = time.time()
 
-                    # Swipe detection: fast horizontal palm movement
+                    # Distance-adaptive sensitivity: scale cursor movement
+                    # inversely with hand size so sitting far away doesn't
+                    # require large arm movements to cross the screen.
+                    hand_size = math.sqrt(
+                        (landmarks[0][0] - landmarks[9][0])**2 +
+                        (landmarks[0][1] - landmarks[9][1])**2)
+                    dist_scale = min(
+                        CURSOR_REF_SIZE / max(hand_size, 0.02),
+                        CURSOR_MAX_SCALE)
+                    # Scale palm position around the active region centre
+                    ar = active_region
+                    ar_cx = (ar[0] + ar[2]) / 2
+                    ar_cy = (ar[1] + ar[3]) / 2
+                    csx = ar_cx + (sx - ar_cx) * dist_scale
+                    csy = ar_cy + (sy - ar_cy) * dist_scale
+
+                    # Swipe uses raw velocity (unscaled) so threshold stays consistent
                     swiped = False
                     if swipe_prev_x is not None and swipe_prev_time is not None:
                         dt = now - swipe_prev_time
@@ -202,7 +224,7 @@ def main():
 
                     if not swiped:
                         screen_x, screen_y = map_to_screen(
-                            sx, sy, active_region, screen_w, screen_h)
+                            csx, csy, active_region, screen_w, screen_h)
                         mouse.move_to(screen_x, screen_y)
                     scroll_anchor_y = None
 
