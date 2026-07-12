@@ -144,7 +144,8 @@ class IntentMatcher:
         """Detect dictation or split on chain words and match each segment.
 
         Dictation mode: if text starts with "write"/"type"/"dictate"/"input",
-        the remainder is typed verbatim at the cursor via xdotool type.
+        the remainder is typed verbatim at the cursor via ydotool type
+        (works for native Wayland windows; xdotool type does not).
         This bypasses intent matching and chain splitting entirely so that
         "write hello and goodbye" types "hello and goodbye" as-is.
 
@@ -160,7 +161,9 @@ class IntentMatcher:
         if m:
             content = m.group(1).strip()
             if content:
-                action = f"xdotool type --clearmodifiers -- {shlex.quote(content)}"
+                # Use ydotool on Wayland (works for native Wayland apps);
+                # xdotool type only works for XWayland windows.
+                action = f"ydotool type --delay 100 -- {shlex.quote(content)}"
                 return [(action, 1.0, f"dictate: {content}")]
             return []
 
