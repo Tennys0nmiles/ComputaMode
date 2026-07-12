@@ -341,7 +341,7 @@ def main():
                     audio = ptt_recorder.stop_recording()
                     if len(audio) >= 1600:
                         def _voice_task(audio_data):
-                            _set_ptt_status("listening...", 30.0,
+                            _set_ptt_status("listening...", 8.0,
                                             (255, 220, 0))
                             text = transcribe(audio_data)
                             if not text:

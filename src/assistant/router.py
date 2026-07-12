@@ -74,12 +74,14 @@ class ConversationRouter:
             return
 
         self._busy.set()
+        print("[Nova] thinking...", flush=True)
         try:
             context = sysinfo.get_context_string()
             answer = self._brain.ask(text, sysinfo_context=context)
+            print(f"[Nova] {answer}", flush=True)
             self._tts.speak(answer)
         except Exception as exc:
-            print(f"[Router] LLM error: {exc}")
+            print(f"[Router] LLM error: {exc}", flush=True)
         finally:
             self._busy.clear()
 

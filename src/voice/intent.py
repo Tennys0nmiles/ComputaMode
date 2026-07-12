@@ -19,6 +19,7 @@ Fallback hook:
 import difflib
 import re
 import shlex
+import threading
 from typing import List, Optional, Set, Tuple
 
 import yaml
@@ -68,19 +69,22 @@ def _strip_fillers(text: str, fillers: set) -> str:
 def fallback_interpreter(text: str) -> Optional[str]:
     """Route unmatched speech to the Stage 3 conversational assistant.
 
-    Speaks a response via TTS as a side effect (runs in the background
-    voice-task thread so the gesture loop is never blocked).
-    Returns None so the dispatcher executes nothing — the assistant only
-    talks, it never triggers system actions.
+    Fire-and-forget: spawns a daemon thread for the LLM call and returns
+    immediately, so the calling voice-task thread is freed at once.
+    This means subsequent PTT commands can transcribe and execute without
+    waiting for Ollama to respond.
 
-    Degrades gracefully: if Stage 3 isn't installed or Ollama is down,
-    this silently returns None and Stage 2 command handling is unaffected.
+    Returns None — the assistant speaks via TTS as a side effect only,
+    it never triggers system actions.
     """
-    try:
-        from src.assistant.router import handle_conversational
-        handle_conversational(text)
-    except Exception:
-        pass
+    def _run():
+        try:
+            from src.assistant.router import handle_conversational
+            handle_conversational(text)
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, daemon=True).start()
     return None
 
 

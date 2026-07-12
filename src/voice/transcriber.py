@@ -4,10 +4,14 @@ Uses the base.en model for low latency on CPU (~1.5s for a 3s clip).
 Model is downloaded once to ~/.cache/huggingface/hub/ and reused.
 """
 
+import threading
 import numpy as np
 
 _model = None
 _MODEL_SIZE = "base.en"
+# Whisper is not thread-safe — only one transcription at a time.
+# Subsequent PTT presses queue here and run as soon as the previous finishes.
+_transcribe_lock = threading.Lock()
 
 
 def _get_model():
@@ -30,6 +34,11 @@ def transcribe(audio_np: np.ndarray, sample_rate: int = 16000) -> str:
     Returns:
         Transcribed text, stripped and lowercased. Empty string on failure.
     """
+    with _transcribe_lock:
+        return _transcribe_locked(audio_np)
+
+
+def _transcribe_locked(audio_np: np.ndarray) -> str:
     model = _get_model()
 
     # faster-whisper expects float32 in [-1, 1]
