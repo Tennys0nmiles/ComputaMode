@@ -73,7 +73,7 @@ class GestureClassifier:
     """Classifies hand gestures from 21 landmarks."""
 
     def __init__(self, pinch_threshold=0.05, fist_open_threshold=3,
-                 stability_frames=3, ptt_threshold=0.07):
+                 stability_frames=3, ptt_threshold=0.04):
         """
         Args:
             pinch_threshold: Max distance between thumb tip and index tip
