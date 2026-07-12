@@ -14,6 +14,7 @@ LLM path:
 """
 
 import re
+import threading
 from typing import Optional, TYPE_CHECKING
 
 from src.assistant import sysinfo
@@ -51,12 +52,13 @@ class ConversationRouter:
     def __init__(self, brain: "AssistantBrain", tts: "TTSEngine"):
         self._brain = brain
         self._tts = tts
+        self._busy = threading.Event()  # set while an LLM call is in-flight
 
     def handle(self, text: str) -> None:
         """Decide fast-path or LLM and speak the answer. Never raises."""
         text_lower = text.lower()
 
-        # Fast path: sysinfo patterns — no LLM needed
+        # Fast path: sysinfo patterns — no LLM needed, always runs immediately
         for pattern, getter in _FAST_PATH:
             if pattern.search(text_lower):
                 try:
@@ -66,13 +68,20 @@ class ConversationRouter:
                     print(f"[Router] sysinfo error: {exc}")
                 return
 
-        # LLM path
+        # LLM path — drop if already processing to avoid stacking responses
+        if self._busy.is_set():
+            print("[Router] already processing, dropping duplicate request")
+            return
+
+        self._busy.set()
         try:
             context = sysinfo.get_context_string()
             answer = self._brain.ask(text, sysinfo_context=context)
             self._tts.speak(answer)
         except Exception as exc:
             print(f"[Router] LLM error: {exc}")
+        finally:
+            self._busy.clear()
 
 
 # Module-level singleton set by main.py during startup

@@ -66,6 +66,29 @@ class IntentMatcher:
         self.strip_fillers = match_cfg.get("strip_fillers", True)
         self.fillers = set(match_cfg.get("filler_words", []))
 
+    def _match_no_fallback(self, text: str) -> Tuple[Optional[str], float, str]:
+        """Like match() but never calls fallback_interpreter."""
+        if not text:
+            return None, 0.0, ""
+        text = text.strip().lower()
+        if self.strip_fillers:
+            text = _strip_fillers(text, self.fillers)
+        best_score = 0.0
+        best_action = None
+        best_phrase = ""
+        for intent_name, intent_cfg in self.intents.items():
+            phrases = intent_cfg.get("phrases", [])
+            action = intent_cfg.get("action", "")
+            for phrase in phrases:
+                score = _similarity(text, phrase.lower())
+                if score > best_score:
+                    best_score = score
+                    best_action = action
+                    best_phrase = phrase
+        if best_score >= self.threshold:
+            return best_action, best_score, best_phrase
+        return None, best_score, best_phrase
+
     def match(self, text: str) -> Tuple[Optional[str], float, str]:
         """Match text to the best intent.
 
@@ -109,7 +132,7 @@ class IntentMatcher:
     # Dictation trigger: "write ..." / "type ..." → type the remainder verbatim
     # Checked before chain splitting so "write hello and goodbye" types the full phrase.
     _DICTATE_PREFIX = re.compile(
-        r'^(?:write|type|dictate|input)\s+(.+)$', re.IGNORECASE
+        r'^(?:write|right|type|dictate|input)\s+(.+)$', re.IGNORECASE
     )
 
     # Words that join chained commands: "close tab and open terminal"
@@ -146,9 +169,20 @@ class IntentMatcher:
             segments = [text]
 
         results = []
+        any_matched = False
         for seg in segments:
-            action, score, phrase = self.match(seg)
+            # Use _match_no_fallback so we don't trigger the LLM per-segment.
+            # We call fallback once at the end only if nothing matched at all.
+            action, score, phrase = self._match_no_fallback(seg)
             if action:
                 results.append((action, score, phrase))
+                any_matched = True
+
+        if not any_matched:
+            # Nothing matched across all segments — send the full original text
+            # to the assistant once, not once per segment.
+            fallback = fallback_interpreter(text)
+            if fallback:
+                results.append((fallback, 1.0, "(fallback)"))
 
         return results

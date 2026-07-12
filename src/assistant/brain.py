@@ -63,15 +63,17 @@ class AssistantBrain:
                     "stream": False,
                     "options": {"temperature": self.temperature},
                 },
-                timeout=60,
+                timeout=45,
             )
             resp.raise_for_status()
             reply = _strip_think(resp.json()["message"]["content"])
         except requests.exceptions.ConnectionError:
             return "Sorry, I can't reach Ollama right now. Is the service running?"
+        except requests.exceptions.Timeout:
+            return "Sorry, that took too long. Try a shorter question."
         except Exception as exc:
             print(f"[Brain] error: {exc}")
-            return "Sorry, something went wrong with the assistant brain."
+            return "Sorry, something went wrong with the assistant."
 
         # Update rolling history
         self._history.append({"role": "user", "content": user_text})
