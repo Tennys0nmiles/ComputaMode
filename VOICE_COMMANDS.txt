@@ -10,9 +10,9 @@ Requires: xdotool  →  sudo apt install xdotool
 VOICE TYPING  (dictation mode)
 ────────────────────────────────────────────────────────
 "write [text]"          → types the text at current cursor position
+"right [text]"          → same (Whisper often mishears "write" as "right")
 "type [text]"           → same
 "dictate [text]"        → same
-"input [text]"          → same
 
 Examples:
   "write hello world"           → types: hello world
@@ -26,87 +26,112 @@ Uses xdotool type — keys go to whatever window is currently focused.
 ────────────────────────────────────────────────────────
 APP LAUNCHING
 ────────────────────────────────────────────────────────
-"open browser"          → xdg-open https://google.com
-"open terminal"         → gnome-terminal
-"open files"            → nautilus (file manager)
-"open editor"           → VS Code
-"open settings"         → GNOME settings
-"open calculator"       → GNOME calculator
+"open browser" / "open firefox"   → opens browser
+"open terminal"                   → gnome-terminal
+"open files" / "file manager"     → Nautilus
+"open editor" / "open vscode"     → VS Code
+"open settings"                   → GNOME settings
+"open calculator"                 → GNOME calculator
 
 ────────────────────────────────────────────────────────
 TAB MANAGEMENT
 ────────────────────────────────────────────────────────
-"close tab"             → Ctrl+W
-"new tab"               → Ctrl+T
-"reopen tab"            → Ctrl+Shift+T  (undo close)
-"next tab"              → Ctrl+Tab
-"previous tab"          → Ctrl+Shift+Tab
+"close tab"                       → Ctrl+W
+"close this tab"                  → Ctrl+W
+"close firefox tab"               → Ctrl+W
+"close this firefox tab"          → Ctrl+W
+"close browser tab"               → Ctrl+W
+"new tab"                         → Ctrl+T
+"reopen tab" / "restore tab"      → Ctrl+Shift+T  (undo close)
+"next tab" / "tab right"          → Ctrl+Tab
+"previous tab" / "tab left"       → Ctrl+Shift+Tab
 
 ────────────────────────────────────────────────────────
 WINDOW MANAGEMENT
 ────────────────────────────────────────────────────────
-"close window"          → Alt+F4
-"new window"            → Ctrl+N
-"minimize"              → Super+H
-"maximize"              → Super+↑
-"fullscreen"            → F11
+"close window"                    → Alt+F4
+"close firefox"                   → Alt+F4
+"close app" / "quit app"          → Alt+F4
+"close terminal"                  → Alt+F4
+"close editor" / "close vscode"   → Alt+F4
+"new window"                      → Ctrl+N
+"private window" / "incognito"    → Ctrl+Shift+P
+"minimize"                        → Super+H
+"maximize"                        → Super+↑
+"fullscreen"                      → F11
+"switch app" / "alt tab"          → Alt+Tab
 
 ────────────────────────────────────────────────────────
 NAVIGATION
 ────────────────────────────────────────────────────────
-"go back"               → Alt+←
-"go forward"            → Alt+→
-"refresh"               → Ctrl+R
+"go back" / "back"                → Alt+←
+"go forward" / "forward"          → Alt+→
+"refresh" / "reload"              → Ctrl+R
+"address bar" / "url bar"         → Ctrl+L
 
 ────────────────────────────────────────────────────────
 EDITING
 ────────────────────────────────────────────────────────
-"copy"                  → Ctrl+C
-"paste"                 → Ctrl+V
-"cut"                   → Ctrl+X
-"undo"                  → Ctrl+Z
-"redo"                  → Ctrl+Shift+Z
-"select all"            → Ctrl+A
-"save"                  → Ctrl+S
-"find"                  → Ctrl+F
+"copy"                            → Ctrl+C
+"paste"                           → Ctrl+V
+"cut"                             → Ctrl+X
+"undo"                            → Ctrl+Z
+"redo"                            → Ctrl+Shift+Z
+"select all"                      → Ctrl+A
+"save"                            → Ctrl+S
+"find" / "search page"            → Ctrl+F
+"delete"                          → Delete key
 
 ────────────────────────────────────────────────────────
 ZOOM
 ────────────────────────────────────────────────────────
-"zoom in"               → Ctrl++
-"zoom out"              → Ctrl+-
-"reset zoom"            → Ctrl+0
+"zoom in"                         → Ctrl++
+"zoom out"                        → Ctrl+-
+"reset zoom"                      → Ctrl+0
 
 ────────────────────────────────────────────────────────
 SCROLL
 ────────────────────────────────────────────────────────
-"scroll up"             → 3 wheel ticks up
-"scroll down"           → 3 wheel ticks down
+"scroll up"                       → scroll up
+"scroll down"                     → scroll down
 
 ────────────────────────────────────────────────────────
 MEDIA / VOLUME
 ────────────────────────────────────────────────────────
-"play" / "pause"        → media play/pause key
-"volume up"             → media volume up key
-"volume down"           → media volume down key
-"mute"                  → media mute key
+"play" / "pause"                  → media play/pause key
+"next track" / "skip track"       → media next
+"previous track"                  → media previous
+"volume up" / "louder"            → media volume up key
+"volume down" / "quieter"         → media volume down key
+"mute" / "unmute"                 → media mute key
 
 ────────────────────────────────────────────────────────
 WORKSPACE
 ────────────────────────────────────────────────────────
-"next workspace"        → Ctrl+Alt+→
-"previous workspace"    → Ctrl+Alt+←
+"next workspace"                  → Ctrl+Alt+→
+"previous workspace"              → Ctrl+Alt+←
 
 ────────────────────────────────────────────────────────
 SCREENSHOT
 ────────────────────────────────────────────────────────
-"take screenshot"       → gnome-screenshot
+"take screenshot" / "screenshot"  → gnome-screenshot
 
 ────────────────────────────────────────────────────────
 GESTURE CONTROL
 ────────────────────────────────────────────────────────
-"pause gestures"        → freeze gesture control
-"resume gestures"       → unfreeze gesture control
+"pause gestures" / "gestures off" → freeze gesture control
+"resume gestures" / "gestures on" → unfreeze gesture control
+
+────────────────────────────────────────────────────────
+CONVERSATIONAL ASSISTANT (Stage 3)
+────────────────────────────────────────────────────────
+Anything not matching a command goes to the local LLM (Nova).
+Fast answers (no LLM) for: battery, time, date, cpu, ram, disk,
+uptime, network status.
+Examples:
+  "what time is it"
+  "how's my battery"
+  "what's the capital of France"
 
 ────────────────────────────────────────────────────────
 TIPS
@@ -116,3 +141,5 @@ TIPS
   full synonym list, or add your own.
 • Add a custom command: edit voice_commands.yaml, add a new intent block
   with phrases and an action (shell command or built-in keyword).
+• If a command misfires, just say the more specific phrasing (e.g.
+  "close this tab" instead of "close tab").

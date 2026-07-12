@@ -19,11 +19,18 @@ intents:
     phrases:
       - open browser
       - launch browser
+      - open a browser
+      - start browser
       - open firefox
       - launch firefox
+      - start firefox
+      - open new firefox
       - open chrome
+      - launch chrome
+      - open chromium
       - go to browser
       - open web
+      - browse the web
     action: "xdg-open https://google.com"
 
   open_terminal:
@@ -31,8 +38,12 @@ intents:
       - open terminal
       - launch terminal
       - new terminal
+      - open a terminal
+      - start terminal
       - open console
       - new console
+      - launch console
+      - terminal please
     action: "gnome-terminal"
 
   open_files:
@@ -40,8 +51,11 @@ intents:
       - open files
       - open file manager
       - launch files
+      - open file browser
       - open finder
       - open folder
+      - file manager
+      - browse files
     action: "nautilus"
 
   open_editor:
@@ -51,6 +65,9 @@ intents:
       - launch vs code
       - open code
       - open vscode
+      - start vscode
+      - launch editor
+      - code editor
     action: "code"
 
   open_settings:
@@ -59,6 +76,8 @@ intents:
       - launch settings
       - system settings
       - open preferences
+      - go to settings
+      - show settings
     action: "gnome-control-center"
 
   open_calculator:
@@ -66,6 +85,7 @@ intents:
       - open calculator
       - launch calculator
       - calculator
+      - start calculator
     action: "gnome-calculator"
 
   # ── Tab management ─────────────────────────────────────────────────────────
@@ -74,8 +94,21 @@ intents:
       - close tab
       - close this tab
       - close current tab
+      - close the tab
       - shut tab
       - exit tab
+      - kill tab
+      - close browser tab
+      - close this browser tab
+      - close firefox tab
+      - close this firefox tab
+      - close current firefox tab
+      - close chrome tab
+      - close this chrome tab
+      - close the firefox tab
+      - shut this tab
+      - get rid of this tab
+      - remove this tab
     action: "xdotool key ctrl+w"
 
   new_tab:
@@ -84,6 +117,10 @@ intents:
       - open tab
       - open new tab
       - create tab
+      - add tab
+      - open a new tab
+      - create a new tab
+      - new browser tab
     action: "xdotool key ctrl+t"
 
   reopen_tab:
@@ -92,6 +129,9 @@ intents:
       - restore tab
       - undo close tab
       - bring back tab
+      - reopen closed tab
+      - restore closed tab
+      - get back last tab
     action: "xdotool key ctrl+shift+t"
 
   next_tab:
@@ -100,6 +140,9 @@ intents:
       - tab right
       - go to next tab
       - switch tab right
+      - move to next tab
+      - tab forward
+      - go right tab
     action: "xdotool key ctrl+Tab"
 
   previous_tab:
@@ -109,6 +152,10 @@ intents:
       - tab left
       - go to previous tab
       - switch tab left
+      - prior tab
+      - tab back
+      - move to previous tab
+      - go left tab
     action: "xdotool key ctrl+shift+Tab"
 
   # ── Window management ──────────────────────────────────────────────────────
@@ -116,8 +163,32 @@ intents:
     phrases:
       - close window
       - close this window
+      - close the window
       - quit window
       - exit window
+      - close application
+      - close this application
+      - close app
+      - close this app
+      - quit application
+      - quit app
+      - close firefox
+      - close firefox window
+      - quit firefox
+      - exit firefox
+      - kill firefox
+      - close chrome
+      - close chrome window
+      - quit chrome
+      - close terminal
+      - close this terminal
+      - quit terminal
+      - close editor
+      - close vscode
+      - quit vscode
+      - close program
+      - quit program
+      - exit application
     action: "xdotool key alt+F4"
 
   new_window:
@@ -125,6 +196,9 @@ intents:
       - new window
       - open window
       - open new window
+      - create window
+      - open a new window
+      - new browser window
     action: "xdotool key ctrl+n"
 
   minimize_window:
@@ -133,6 +207,9 @@ intents:
       - minimize window
       - hide window
       - shrink window
+      - send to taskbar
+      - minimize this
+      - hide this window
     action: "xdotool key super+h"
 
   maximize_window:
@@ -141,6 +218,9 @@ intents:
       - maximize window
       - full window
       - expand window
+      - make window bigger
+      - make it bigger
+      - maximize this
     action: "xdotool key super+Up"
 
   fullscreen:
@@ -149,7 +229,23 @@ intents:
       - full screen
       - toggle fullscreen
       - go fullscreen
+      - enter fullscreen
+      - exit fullscreen
+      - fullscreen mode
     action: "xdotool key F11"
+
+  # ── App switcher ────────────────────────────────────────────────────────────
+  switch_app:
+    phrases:
+      - switch app
+      - switch application
+      - next application
+      - alt tab
+      - switch window
+      - next window
+      - change app
+      - task switch
+    action: "xdotool key alt+Tab"
 
   # ── Navigation ─────────────────────────────────────────────────────────────
   go_back:
@@ -158,6 +254,10 @@ intents:
       - back
       - navigate back
       - previous page
+      - go to previous page
+      - browser back
+      - back one page
+      - step back
     action: "xdotool key alt+Left"
 
   go_forward:
@@ -166,6 +266,9 @@ intents:
       - forward
       - navigate forward
       - next page
+      - go to next page
+      - browser forward
+      - step forward
     action: "xdotool key alt+Right"
 
   refresh:
@@ -174,7 +277,31 @@ intents:
       - reload
       - refresh page
       - reload page
+      - refresh this page
+      - reload this page
+      - hard refresh
     action: "xdotool key ctrl+r"
+
+  go_to_address_bar:
+    phrases:
+      - address bar
+      - go to address bar
+      - open address bar
+      - url bar
+      - location bar
+      - type url
+      - enter url
+    action: "xdotool key ctrl+l"
+
+  new_private_window:
+    phrases:
+      - private window
+      - incognito window
+      - private browsing
+      - open private window
+      - new incognito
+      - open incognito
+    action: "xdotool key ctrl+shift+p"
 
   # ── Editing ────────────────────────────────────────────────────────────────
   copy:
@@ -183,6 +310,8 @@ intents:
       - copy that
       - copy selection
       - copy text
+      - copy this
+      - copy selected
     action: "xdotool key ctrl+c"
 
   paste:
@@ -191,6 +320,8 @@ intents:
       - paste that
       - paste text
       - paste here
+      - paste it
+      - paste clipboard
     action: "xdotool key ctrl+v"
 
   cut:
@@ -199,6 +330,7 @@ intents:
       - cut that
       - cut selection
       - cut text
+      - cut this
     action: "xdotool key ctrl+x"
 
   undo:
@@ -207,6 +339,8 @@ intents:
       - undo that
       - go back undo
       - revert
+      - undo last
+      - undo action
     action: "xdotool key ctrl+z"
 
   redo:
@@ -214,6 +348,7 @@ intents:
       - redo
       - redo that
       - redo action
+      - redo last
     action: "xdotool key ctrl+shift+z"
 
   select_all:
@@ -221,6 +356,7 @@ intents:
       - select all
       - highlight all
       - select everything
+      - grab all
     action: "xdotool key ctrl+a"
 
   save:
@@ -229,6 +365,8 @@ intents:
       - save file
       - save document
       - save this
+      - save it
+      - save changes
     action: "xdotool key ctrl+s"
 
   find:
@@ -237,7 +375,20 @@ intents:
       - search page
       - find on page
       - open search
+      - find text
+      - search on page
+      - search this page
+      - find in page
     action: "xdotool key ctrl+f"
+
+  delete:
+    phrases:
+      - delete
+      - delete this
+      - delete selected
+      - remove this
+      - backspace
+    action: "xdotool key Delete"
 
   # ── Zoom ───────────────────────────────────────────────────────────────────
   zoom_in:
@@ -246,6 +397,9 @@ intents:
       - make bigger
       - increase zoom
       - zoom closer
+      - make larger
+      - bigger text
+      - increase text size
     action: "xdotool key ctrl+plus"
 
   zoom_out:
@@ -254,6 +408,8 @@ intents:
       - make smaller
       - decrease zoom
       - zoom away
+      - smaller text
+      - decrease text size
     action: "xdotool key ctrl+minus"
 
   reset_zoom:
@@ -262,6 +418,8 @@ intents:
       - default zoom
       - normal zoom
       - zoom reset
+      - zoom to normal
+      - reset text size
     action: "xdotool key ctrl+0"
 
   # ── Scroll ─────────────────────────────────────────────────────────────────
@@ -271,6 +429,8 @@ intents:
       - move up
       - go up
       - page up
+      - scroll to top
+      - up a bit
     action: scroll_up
 
   scroll_down:
@@ -279,6 +439,8 @@ intents:
       - move down
       - go down
       - page down
+      - scroll to bottom
+      - down a bit
     action: scroll_down
 
   # ── Media / volume ─────────────────────────────────────────────────────────
@@ -288,7 +450,30 @@ intents:
       - pause
       - play pause
       - toggle play
+      - resume playback
+      - pause playback
+      - stop music
+      - play music
     action: "xdotool key XF86AudioPlay"
+
+  next_track:
+    phrases:
+      - next track
+      - next song
+      - skip track
+      - skip song
+      - forward track
+    action: "xdotool key XF86AudioNext"
+
+  previous_track:
+    phrases:
+      - previous track
+      - previous song
+      - last track
+      - last song
+      - back track
+      - rewind track
+    action: "xdotool key XF86AudioPrev"
 
   volume_up:
     phrases:
@@ -296,6 +481,9 @@ intents:
       - louder
       - increase volume
       - turn up
+      - turn it up
+      - raise volume
+      - more volume
     action: "xdotool key XF86AudioRaiseVolume"
 
   volume_down:
@@ -305,6 +493,8 @@ intents:
       - decrease volume
       - turn down
       - lower volume
+      - turn it down
+      - less volume
     action: "xdotool key XF86AudioLowerVolume"
 
   mute:
@@ -313,6 +503,8 @@ intents:
       - mute audio
       - silence
       - toggle mute
+      - mute sound
+      - unmute
     action: "xdotool key XF86AudioMute"
 
   # ── Workspace switching ────────────────────────────────────────────────────
@@ -323,6 +515,8 @@ intents:
       - last workspace
       - switch workspace left
       - go to previous workspace
+      - workspace back
+      - move workspace left
     action: "xdotool key ctrl+alt+Left"
 
   workspace_right:
@@ -331,6 +525,8 @@ intents:
       - workspace right
       - switch workspace right
       - go to next workspace
+      - workspace forward
+      - move workspace right
     action: "xdotool key ctrl+alt+Right"
 
   # ── Screenshot ─────────────────────────────────────────────────────────────
@@ -341,6 +537,9 @@ intents:
       - capture screen
       - snap screen
       - grab screen
+      - take a screenshot
+      - screen capture
+      - snip screen
     action: "gnome-screenshot"
 
   # ── Gesture control ────────────────────────────────────────────────────────
@@ -350,6 +549,8 @@ intents:
       - stop gestures
       - disable gestures
       - freeze gestures
+      - turn off gestures
+      - gestures off
     action: pause_gestures
 
   resume_gestures:
@@ -358,6 +559,8 @@ intents:
       - start gestures
       - enable gestures
       - unfreeze gestures
+      - turn on gestures
+      - gestures on
     action: resume_gestures
 
 # ── Stage 3: conversational assistant ────────────────────────────────────────
