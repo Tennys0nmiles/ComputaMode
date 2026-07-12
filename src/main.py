@@ -14,6 +14,9 @@ import threading
 import time
 from pathlib import Path
 
+import numpy as np
+import sounddevice as sd
+
 import cv2
 
 from src.tracker import HandTracker
@@ -50,6 +53,20 @@ def map_to_screen(palm_x, palm_y, active_region, screen_w, screen_h):
     nx = max(0.0, min(1.0, (palm_x - left) / (right - left)))
     ny = max(0.0, min(1.0, (palm_y - top) / (bottom - top)))
     return nx * screen_w, ny * screen_h
+
+
+def _beep_no_match(freq: int = 440, duration: float = 0.12, volume: float = 0.35) -> None:
+    """Play a short low-key beep to signal no command was matched."""
+    try:
+        sr = 22050
+        t = np.linspace(0, duration, int(sr * duration), endpoint=False)
+        tone = (volume * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+        # Quick fade-out to avoid click
+        fade = np.linspace(1.0, 0.0, len(tone))
+        sd.play(tone * fade, samplerate=sr)
+        sd.wait()
+    except Exception:
+        pass  # never block the voice thread
 
 
 def main():
@@ -312,10 +329,15 @@ def main():
                     if len(audio) >= 1600:
                         def _voice_task(audio_data):
                             text = transcribe(audio_data)
-                            if text:
-                                matches = voice_matcher.match_all(text)
+                            if not text:
+                                return
+                            print(f"[PTT] heard: {text!r}")
+                            matches = voice_matcher.match_all(text)
+                            if matches:
                                 for action, score, phrase in matches:
                                     dispatcher.execute(action)
+                            else:
+                                _beep_no_match()
                         threading.Thread(
                             target=_voice_task, args=(audio,), daemon=True
                         ).start()
