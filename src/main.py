@@ -55,6 +55,20 @@ def map_to_screen(palm_x, palm_y, active_region, screen_w, screen_h):
     return nx * screen_w, ny * screen_h
 
 
+def _notify(title: str, body: str = "", urgency: str = "low") -> None:
+    """Fire a desktop notification non-blocking. Never raises."""
+    try:
+        cmd = ["notify-send", f"--urgency={urgency}",
+               "--icon=audio-input-microphone",
+               "--app-name=ComputaMode",
+               "-t", "2500", title]
+        if body:
+            cmd.append(body)
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
 def _beep_no_match(freq: int = 440, duration: float = 0.12, volume: float = 0.35) -> None:
     """Play a short low-key beep to signal no command was matched."""
     try:
@@ -347,21 +361,25 @@ def main():
                             if not text:
                                 _set_ptt_status("(nothing heard)", 1.5,
                                                 (100, 100, 255))
+                                _notify("ComputaMode", "(nothing heard)")
                                 threading.Thread(
                                     target=_beep_no_match, daemon=True
                                 ).start()
                                 return
-                            print(f"[PTT] heard: {text!r}")
+                            print(f"[PTT] heard: {text!r}", flush=True)
                             matches = voice_matcher.match_all(text)
                             if matches:
                                 labels = ", ".join(p for _, _, p in matches)
                                 _set_ptt_status(f">> {labels}", 2.0,
                                                 (0, 255, 128))
+                                _notify(f"✓  {labels}", f'heard: "{text}"')
                                 for action, score, phrase in matches:
                                     dispatcher.execute(action)
                             else:
                                 _set_ptt_status(f"? {text[:40]}", 2.5,
                                                 (80, 80, 255))
+                                _notify("? no match", f'heard: "{text}"',
+                                        urgency="normal")
                                 threading.Thread(
                                     target=_beep_no_match, daemon=True
                                 ).start()

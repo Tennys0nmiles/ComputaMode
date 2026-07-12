@@ -109,7 +109,7 @@ intents:
       - shut this tab
       - get rid of this tab
       - remove this tab
-    action: "xdotool key ctrl+w"
+    action: "ydotool key --delay 0 ctrl+w"
 
   new_tab:
     phrases:
@@ -121,7 +121,7 @@ intents:
       - open a new tab
       - create a new tab
       - new browser tab
-    action: "xdotool key ctrl+t"
+    action: "ydotool key --delay 0 ctrl+t"
 
   reopen_tab:
     phrases:
@@ -132,7 +132,7 @@ intents:
       - reopen closed tab
       - restore closed tab
       - get back last tab
-    action: "xdotool key ctrl+shift+t"
+    action: "ydotool key --delay 0 ctrl+shift+t"
 
   next_tab:
     phrases:
@@ -143,7 +143,7 @@ intents:
       - move to next tab
       - tab forward
       - go right tab
-    action: "xdotool key ctrl+Tab"
+    action: "ydotool key --delay 0 ctrl+Tab"
 
   previous_tab:
     phrases:
@@ -156,7 +156,7 @@ intents:
       - tab back
       - move to previous tab
       - go left tab
-    action: "xdotool key ctrl+shift+Tab"
+    action: "ydotool key --delay 0 ctrl+shift+Tab"
 
   # ── Window management ──────────────────────────────────────────────────────
   close_window:
@@ -172,24 +172,49 @@ intents:
       - close this app
       - quit application
       - quit app
+      - close program
+      - quit program
+      - exit application
+    action: "ydotool key --delay 0 alt+F4"
+
+  close_firefox:
+    phrases:
       - close firefox
       - close firefox window
       - quit firefox
       - exit firefox
       - kill firefox
+    action: "pkill -SIGTERM firefox"
+
+  close_chrome:
+    phrases:
       - close chrome
       - close chrome window
       - quit chrome
+      - exit chrome
+      - kill chrome
+      - close chromium
+      - quit chromium
+    action: "pkill -SIGTERM -f 'chrome|chromium'"
+
+  close_terminal:
+    phrases:
       - close terminal
       - close this terminal
       - quit terminal
+      - exit terminal
+      - kill terminal
+    action: "pkill -SIGTERM gnome-terminal"
+
+  close_vscode:
+    phrases:
       - close editor
       - close vscode
       - quit vscode
-      - close program
-      - quit program
-      - exit application
-    action: "xdotool key alt+F4"
+      - exit vscode
+      - close vs code
+      - quit vs code
+    action: "pkill -SIGTERM code"
 
   new_window:
     phrases:
@@ -199,7 +224,7 @@ intents:
       - create window
       - open a new window
       - new browser window
-    action: "xdotool key ctrl+n"
+    action: "ydotool key --delay 0 ctrl+n"
 
   minimize_window:
     phrases:
@@ -210,7 +235,7 @@ intents:
       - send to taskbar
       - minimize this
       - hide this window
-    action: "xdotool key super+h"
+    action: "ydotool key --delay 0 super+h"
 
   maximize_window:
     phrases:
@@ -221,7 +246,7 @@ intents:
       - make window bigger
       - make it bigger
       - maximize this
-    action: "xdotool key super+Up"
+    action: "ydotool key --delay 0 super+Up"
 
   fullscreen:
     phrases:
@@ -232,7 +257,7 @@ intents:
       - enter fullscreen
       - exit fullscreen
       - fullscreen mode
-    action: "xdotool key F11"
+    action: "ydotool key --delay 0 F11"
 
   # ── App switcher ────────────────────────────────────────────────────────────
   switch_app:
@@ -245,7 +270,7 @@ intents:
       - next window
       - change app
       - task switch
-    action: "xdotool key alt+Tab"
+    action: "ydotool key --delay 0 alt+Tab"
 
   # ── Navigation ─────────────────────────────────────────────────────────────
   go_back:
@@ -258,7 +283,7 @@ intents:
       - browser back
       - back one page
       - step back
-    action: "xdotool key alt+Left"
+    action: "ydotool key --delay 0 alt+Left"
 
   go_forward:
     phrases:
@@ -269,7 +294,7 @@ intents:
       - go to next page
       - browser forward
       - step forward
-    action: "xdotool key alt+Right"
+    action: "ydotool key --delay 0 alt+Right"
 
   refresh:
     phrases:
@@ -280,7 +305,7 @@ intents:
       - refresh this page
       - reload this page
       - hard refresh
-    action: "xdotool key ctrl+r"
+    action: "ydotool key --delay 0 ctrl+r"
 
   go_to_address_bar:
     phrases:
@@ -291,7 +316,7 @@ intents:
       - location bar
       - type url
       - enter url
-    action: "xdotool key ctrl+l"
+    action: "ydotool key --delay 0 ctrl+l"
 
   new_private_window:
     phrases:
@@ -301,7 +326,7 @@ intents:
       - open private window
       - new incognito
       - open incognito
-    action: "xdotool key ctrl+shift+p"
+    action: "ydotool key --delay 0 ctrl+shift+p"
 
   # ── Editing ────────────────────────────────────────────────────────────────
   copy:
@@ -312,7 +337,7 @@ intents:
       - copy text
       - copy this
       - copy selected
-    action: "xdotool key ctrl+c"
+    action: "ydotool key --delay 0 ctrl+c"
 
   paste:
     phrases:
@@ -322,7 +347,7 @@ intents:
       - paste here
       - paste it
       - paste clipboard
-    action: "xdotool key ctrl+v"
+    action: "ydotool key --delay 0 ctrl+v"
 
   cut:
     phrases:
@@ -331,7 +356,7 @@ intents:
       - cut selection
       - cut text
       - cut this
-    action: "xdotool key ctrl+x"
+    action: "ydotool key --delay 0 ctrl+x"
 
   undo:
     phrases:
@@ -341,7 +366,7 @@ intents:
       - revert
       - undo last
       - undo action
-    action: "xdotool key ctrl+z"
+    action: "ydotool key --delay 0 ctrl+z"
 
   redo:
     phrases:
@@ -349,7 +374,7 @@ intents:
       - redo that
       - redo action
       - redo last
-    action: "xdotool key ctrl+shift+z"
+    action: "ydotool key --delay 0 ctrl+shift+z"
 
   select_all:
     phrases:
@@ -357,7 +382,7 @@ intents:
       - highlight all
       - select everything
       - grab all
-    action: "xdotool key ctrl+a"
+    action: "ydotool key --delay 0 ctrl+a"
 
   save:
     phrases:
@@ -367,7 +392,7 @@ intents:
       - save this
       - save it
       - save changes
-    action: "xdotool key ctrl+s"
+    action: "ydotool key --delay 0 ctrl+s"
 
   find:
     phrases:
@@ -379,7 +404,7 @@ intents:
       - search on page
       - search this page
       - find in page
-    action: "xdotool key ctrl+f"
+    action: "ydotool key --delay 0 ctrl+f"
 
   delete:
     phrases:
@@ -388,7 +413,7 @@ intents:
       - delete selected
       - remove this
       - backspace
-    action: "xdotool key Delete"
+    action: "ydotool key --delay 0 Delete"
 
   # ── Zoom ───────────────────────────────────────────────────────────────────
   zoom_in:
@@ -400,7 +425,7 @@ intents:
       - make larger
       - bigger text
       - increase text size
-    action: "xdotool key ctrl+plus"
+    action: "ydotool key --delay 0 ctrl+plus"
 
   zoom_out:
     phrases:
@@ -410,7 +435,7 @@ intents:
       - zoom away
       - smaller text
       - decrease text size
-    action: "xdotool key ctrl+minus"
+    action: "ydotool key --delay 0 ctrl+minus"
 
   reset_zoom:
     phrases:
@@ -420,7 +445,7 @@ intents:
       - zoom reset
       - zoom to normal
       - reset text size
-    action: "xdotool key ctrl+0"
+    action: "ydotool key --delay 0 ctrl+0"
 
   # ── Scroll ─────────────────────────────────────────────────────────────────
   scroll_up:
@@ -454,7 +479,7 @@ intents:
       - pause playback
       - stop music
       - play music
-    action: "xdotool key XF86AudioPlay"
+    action: "ydotool key --delay 0 XF86AudioPlay"
 
   next_track:
     phrases:
@@ -463,7 +488,7 @@ intents:
       - skip track
       - skip song
       - forward track
-    action: "xdotool key XF86AudioNext"
+    action: "ydotool key --delay 0 XF86AudioNext"
 
   previous_track:
     phrases:
@@ -473,7 +498,7 @@ intents:
       - last song
       - back track
       - rewind track
-    action: "xdotool key XF86AudioPrev"
+    action: "ydotool key --delay 0 XF86AudioPrev"
 
   volume_up:
     phrases:
@@ -484,7 +509,7 @@ intents:
       - turn it up
       - raise volume
       - more volume
-    action: "xdotool key XF86AudioRaiseVolume"
+    action: "ydotool key --delay 0 XF86AudioRaiseVolume"
 
   volume_down:
     phrases:
@@ -495,7 +520,7 @@ intents:
       - lower volume
       - turn it down
       - less volume
-    action: "xdotool key XF86AudioLowerVolume"
+    action: "ydotool key --delay 0 XF86AudioLowerVolume"
 
   mute:
     phrases:
@@ -505,7 +530,7 @@ intents:
       - toggle mute
       - mute sound
       - unmute
-    action: "xdotool key XF86AudioMute"
+    action: "ydotool key --delay 0 XF86AudioMute"
 
   # ── Workspace switching ────────────────────────────────────────────────────
   workspace_left:
@@ -517,7 +542,7 @@ intents:
       - go to previous workspace
       - workspace back
       - move workspace left
-    action: "xdotool key ctrl+alt+Left"
+    action: "ydotool key --delay 0 ctrl+alt+Left"
 
   workspace_right:
     phrases:
@@ -527,7 +552,7 @@ intents:
       - go to next workspace
       - workspace forward
       - move workspace right
-    action: "xdotool key ctrl+alt+Right"
+    action: "ydotool key --delay 0 ctrl+alt+Right"
 
   # ── Screenshot ─────────────────────────────────────────────────────────────
   take_screenshot:

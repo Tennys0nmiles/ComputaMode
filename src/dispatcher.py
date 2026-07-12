@@ -18,7 +18,12 @@ import subprocess
 from evdev import ecodes
 
 # Ensure DISPLAY is available for xdotool subprocesses on Wayland/XWayland.
-_SUBPROCESS_ENV = {**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")}
+_SUBPROCESS_ENV = {
+    **os.environ,
+    "DISPLAY": os.environ.get("DISPLAY", ":0"),
+    "WAYLAND_DISPLAY": os.environ.get("WAYLAND_DISPLAY", "wayland-0"),
+    "XDG_RUNTIME_DIR": os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"),
+}
 
 
 class ActionDispatcher:
