@@ -12,9 +12,13 @@ Built-in action keywords:
 Anything else is executed as a shell command via subprocess.
 """
 
+import os
 import subprocess
 
 from evdev import ecodes
+
+# Ensure DISPLAY is available for xdotool subprocesses on Wayland/XWayland.
+_SUBPROCESS_ENV = {**os.environ, "DISPLAY": os.environ.get("DISPLAY", ":0")}
 
 
 class ActionDispatcher:
@@ -58,6 +62,7 @@ class ActionDispatcher:
                     action, shell=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    env=_SUBPROCESS_ENV,
                 )
             except Exception:
                 return False

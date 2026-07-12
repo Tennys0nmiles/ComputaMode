@@ -40,9 +40,9 @@ def transcribe(audio_np: np.ndarray, sample_rate: int = 16000) -> str:
     segments, _ = model.transcribe(
         audio_f32,
         language="en",
-        beam_size=2,
+        beam_size=1,       # greedy — fastest, still accurate for short commands
         vad_filter=True,   # skip silent sections
-        vad_parameters={"min_silence_duration_ms": 300},
+        vad_parameters={"min_silence_duration_ms": 200},
     )
 
     text = " ".join(seg.text for seg in segments).strip().lower()

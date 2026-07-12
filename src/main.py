@@ -199,6 +199,18 @@ def main():
     scroll_last_fire = 0.0          # time of last scroll tick fired
     show_overlay = not args.no_overlay
 
+    # Thread-safe PTT status shown in overlay
+    # [text, expire_time, color_bgr]
+    _ptt_status = ["", 0.0, (255, 255, 255)]
+    _ptt_lock = threading.Lock()
+
+    def _set_ptt_status(text: str, duration: float = 2.5,
+                        color=(255, 255, 255)) -> None:
+        with _ptt_lock:
+            _ptt_status[0] = text
+            _ptt_status[1] = time.monotonic() + duration
+            _ptt_status[2] = color
+
     try:
         while True:
             ok, frame = tracker.read_frame()
@@ -323,21 +335,36 @@ def main():
                 if gesture == Gesture.PTT_RECORD:
                     if not ptt_was_active:
                         ptt_recorder.start_recording()
+                        _set_ptt_status("● REC", 30.0, (0, 80, 255))
                 elif ptt_was_active:
                     # Just released PTT — transcribe + dispatch in background
                     audio = ptt_recorder.stop_recording()
                     if len(audio) >= 1600:
                         def _voice_task(audio_data):
+                            _set_ptt_status("listening...", 30.0,
+                                            (255, 220, 0))
                             text = transcribe(audio_data)
                             if not text:
+                                _set_ptt_status("(nothing heard)", 1.5,
+                                                (100, 100, 255))
+                                threading.Thread(
+                                    target=_beep_no_match, daemon=True
+                                ).start()
                                 return
                             print(f"[PTT] heard: {text!r}")
                             matches = voice_matcher.match_all(text)
                             if matches:
+                                labels = ", ".join(p for _, _, p in matches)
+                                _set_ptt_status(f">> {labels}", 2.0,
+                                                (0, 255, 128))
                                 for action, score, phrase in matches:
                                     dispatcher.execute(action)
                             else:
-                                _beep_no_match()
+                                _set_ptt_status(f"? {text[:40]}", 2.5,
+                                                (80, 80, 255))
+                                threading.Thread(
+                                    target=_beep_no_match, daemon=True
+                                ).start()
                         threading.Thread(
                             target=_voice_task, args=(audio,), daemon=True
                         ).start()
@@ -386,6 +413,14 @@ def main():
                 color = (0, 0, 255) if state["paused"] else (0, 255, 0)
                 cv2.putText(frame, status, (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+                # PTT status banner
+                with _ptt_lock:
+                    ptt_text = _ptt_status[0]
+                    ptt_expire = _ptt_status[1]
+                    ptt_color = tuple(_ptt_status[2])
+                if ptt_text and time.monotonic() < ptt_expire:
+                    cv2.putText(frame, ptt_text, (10, 65),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, ptt_color, 2)
                 cv2.imshow("Hand Gesture Control", frame)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
