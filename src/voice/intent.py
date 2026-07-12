@@ -21,6 +21,7 @@ import re
 import shlex
 import threading
 from typing import List, Optional, Set, Tuple
+from urllib.parse import quote_plus
 
 import yaml
 
@@ -150,6 +151,12 @@ class IntentMatcher:
         r'^(?:write|right|type|dictate|input)\s+(.+)$', re.IGNORECASE
     )
 
+    # Search trigger — "search for X", "google X", "look up X", "find X online"
+    _SEARCH_PREFIX = re.compile(
+        r'^(?:search(?:\s+for)?|google|look\s+up|find)\s+(.+?)(?:\s+online)?$',
+        re.IGNORECASE
+    )
+
     # Words that join chained commands
     _CHAIN_SPLIT = re.compile(
         r'\b(?:and then|after that|and also|and|then|also|next)\b'
@@ -174,6 +181,16 @@ class IntentMatcher:
                 return [(action, 1.0, f"dictate: {content}")]
             return []
 
+        # Search — "search for X" / "google X" / "look up X"
+        m = self._SEARCH_PREFIX.match(text)
+        if m:
+            query = m.group(1).strip()
+            if query:
+                url = f"https://www.google.com/search?q={quote_plus(query)}"
+                action = f"xdg-open {shlex.quote(url)}"
+                return [(action, 1.0, f"search: {query}")]
+            return []
+
         segments = [s.strip() for s in self._CHAIN_SPLIT.split(text) if s.strip()]
         if not segments:
             segments = [text]
@@ -181,6 +198,18 @@ class IntentMatcher:
         results = []
         any_matched = False
         for seg in segments:
+            # Check search prefix per-segment so "open firefox and search for X"
+            # correctly handles the "search for X" part after chain-splitting.
+            sm = self._SEARCH_PREFIX.match(seg.strip())
+            if sm:
+                query = sm.group(1).strip()
+                if query:
+                    url = f"https://www.google.com/search?q={quote_plus(query)}"
+                    results.append((f"xdg-open {shlex.quote(url)}", 1.0,
+                                    f"search: {query}"))
+                    any_matched = True
+                continue
+
             action, score, phrase = self._match_no_fallback(seg)
             if action:
                 results.append((action, score, phrase))

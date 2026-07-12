@@ -31,7 +31,7 @@ intents:
       - go to browser
       - open web
       - browse the web
-    action: "xdg-open https://google.com"
+    action: "firefox -P default"
 
   open_terminal:
     phrases:
