@@ -8,3 +8,4 @@ sounddevice
 piper-tts
 psutil
 requests
+scipy

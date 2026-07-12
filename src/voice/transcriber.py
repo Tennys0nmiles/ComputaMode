@@ -37,6 +37,12 @@ def transcribe(audio_np: np.ndarray, sample_rate: int = 16000) -> str:
     if audio_f32.ndim > 1:
         audio_f32 = audio_f32.mean(axis=1)
 
+    # Normalize: if the signal is quiet (low mic gain), boost it so Whisper
+    # has enough amplitude to work with. Cap at 1.0 to avoid clipping.
+    peak = np.abs(audio_f32).max()
+    if 0.0 < peak < 0.3:
+        audio_f32 = audio_f32 * (0.3 / peak)
+
     segments, _ = model.transcribe(
         audio_f32,
         language="en",
