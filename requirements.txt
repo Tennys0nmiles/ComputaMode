@@ -5,7 +5,14 @@ PyYAML==6.0.2
 numpy==1.26.4
 faster-whisper
 sounddevice
+soundfile>=0.12.1
+# TTS — Kokoro (primary)
+kokoro-onnx==0.4.2
+onnxruntime>=1.17.0
+# TTS — Piper (legacy fallback; remove after Kokoro confirmed in daily use)
 piper-tts
 psutil
 requests
 scipy
+rapidfuzz>=3.6.0
+sentence-transformers>=2.7.0

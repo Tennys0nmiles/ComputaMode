@@ -67,6 +67,50 @@ def _strip_fillers(text: str, fillers: set) -> str:
     return " ".join(words)
 
 
+class AppSlotMatcher:
+    """Matches {verb} {app} patterns from the apps/verbs registry.
+
+    Replaces manually enumerating every open/close/minimize combination.
+    "close settings", "launch terminal", "quit vs code" all resolve without
+    any explicit phrases — just the app registry and verb list.
+    """
+
+    def __init__(self, apps_cfg: dict, verbs_cfg: dict):
+        self._apps = apps_cfg or {}
+        # Pre-clean all verb phrases and app aliases once at load time
+        self._verbs: dict[str, list[str]] = {
+            v: [_clean(p) for p in phrases]
+            for v, phrases in (verbs_cfg or {}).items()
+        }
+        self._app_aliases: dict[str, list[str]] = {
+            name: [_clean(a) for a in cfg.get("aliases", [])]
+            for name, cfg in self._apps.items()
+        }
+
+    @staticmethod
+    def _best_token(text: str, groups: dict) -> Optional[str]:
+        """Return the group key whose longest cleaned phrase appears in text."""
+        best_key, best_len = None, 0
+        for key, phrases in groups.items():
+            for p in phrases:
+                if p and re.search(r"\b" + re.escape(p) + r"\b", text):
+                    if len(p) > best_len:
+                        best_len = len(p)
+                        best_key = key
+        return best_key
+
+    def match(self, text: str) -> Optional[str]:
+        """Return shell command for {verb}+{app} or None if not matched."""
+        cleaned = _clean(text)
+        verb = self._best_token(cleaned, self._verbs)
+        if not verb:
+            return None
+        app_name = self._best_token(cleaned, self._app_aliases)
+        if not app_name:
+            return None
+        return self._apps[app_name].get(verb)  # None if verb not defined for app
+
+
 def fallback_interpreter(text: str) -> Optional[str]:
     """Route unmatched speech to the Stage 3 conversational assistant.
 
@@ -100,6 +144,7 @@ class IntentMatcher:
         self.threshold = match_cfg.get("confidence_threshold", 0.55)
         self.strip_fillers_flag = match_cfg.get("strip_fillers", True)
         self.fillers = set(match_cfg.get("filler_words", []))
+        self._slot = AppSlotMatcher(cfg.get("apps", {}), cfg.get("verbs", {}))
 
     def _score_against_all(self, text: str) -> Tuple[Optional[str], float, str]:
         """
@@ -131,13 +176,19 @@ class IntentMatcher:
         return None, best_score, best_phrase
 
     def _match_no_fallback(self, text: str) -> Tuple[Optional[str], float, str]:
+        # App+verb slot-filling takes priority over fuzzy phrase matching.
+        # "close settings", "launch terminal", "quit vscode" all resolve here
+        # without any explicit phrase entries in the intents table.
+        cmd = self._slot.match(text)
+        if cmd:
+            return cmd, 1.0, "(app-slot)"
         return self._score_against_all(text)
 
     def match(self, text: str) -> Tuple[Optional[str], float, str]:
         """Match text to the best intent, calling fallback if nothing matches."""
         if not text:
             return None, 0.0, ""
-        action, score, phrase = self._score_against_all(text)
+        action, score, phrase = self._match_no_fallback(text)
         if action:
             return action, score, phrase
         fallback = fallback_interpreter(text)

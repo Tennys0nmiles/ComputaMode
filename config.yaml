@@ -2,7 +2,11 @@
 # Edit this file to customize gesture→action mappings and tuning parameters.
 
 camera:
-  index: 0                  # /dev/video index
+  prefer_external: true     # auto-pick a plugged-in USB webcam (e.g. the
+                             # Logitech) over the laptop's built-in camera;
+                             # detected via /dev/v4l/by-id at startup
+  index: 0                  # fallback /dev/video index if prefer_external
+                             # is false or no external webcam is plugged in
   mirror: true              # flip frame horizontally
 
 tracking:
@@ -45,4 +49,4 @@ screen:
   # Portion of the camera frame that maps to full screen movement.
   # Smaller = more sensitive, larger = need bigger hand movement.
   # Format: [left, top, right, bottom] as fractions of frame.
-  active_region: [0.15, 0.15, 0.85, 0.85]
+  active_region: [0.267, 0.267, 0.733, 0.733]

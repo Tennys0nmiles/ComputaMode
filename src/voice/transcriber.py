@@ -46,18 +46,23 @@ def _transcribe_locked(audio_np: np.ndarray) -> str:
     if audio_f32.ndim > 1:
         audio_f32 = audio_f32.mean(axis=1)
 
-    # Normalize: if the signal is quiet (low mic gain), boost it so Whisper
-    # has enough amplitude to work with. Cap at 1.0 to avoid clipping.
+    # Normalize: only boost genuinely quiet recordings (peak below 35%).
+    # Boosting further amplifies noise and degrades Whisper accuracy.
     peak = np.abs(audio_f32).max()
-    if 0.0 < peak < 0.3:
-        audio_f32 = audio_f32 * (0.3 / peak)
+    if 0.0 < peak < 0.35:
+        audio_f32 = np.clip(audio_f32 * (0.35 / peak), -1.0, 1.0)
 
     segments, _ = model.transcribe(
         audio_f32,
         language="en",
-        beam_size=1,       # greedy — fastest, still accurate for short commands
-        vad_filter=True,   # skip silent sections
-        vad_parameters={"min_silence_duration_ms": 200},
+        beam_size=1,
+        condition_on_previous_text=False,
+        vad_filter=True,
+        vad_parameters={
+            "threshold": 0.3,
+            "min_silence_duration_ms": 300,
+            "min_speech_duration_ms": 100,
+        },
     )
 
     text = " ".join(seg.text for seg in segments).strip().lower()

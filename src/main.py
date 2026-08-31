@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import sounddevice as sd
+import yaml
 
 import cv2
 
@@ -25,7 +26,7 @@ from src.smoothing import PointSmoother
 from evdev import ecodes
 from src.injector import VirtualMouse
 from src.calibration import load_calibration, run_calibration
-from src.config import load_config
+from src.config import load_config, resolve_camera_index
 from src.dispatcher import ActionDispatcher
 
 
@@ -69,6 +70,37 @@ def _notify(title: str, body: str = "", urgency: str = "low") -> None:
         pass
 
 
+def _media_is_playing() -> bool:
+    """True if some MPRIS player (e.g. Spotify) is currently playing.
+    Never raises; returns False if playerctl or a player isn't available."""
+    try:
+        result = subprocess.run(
+            ["playerctl", "status"],
+            capture_output=True, text=True, timeout=2,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "Playing"
+    except Exception:
+        return False
+
+
+def _media_pause() -> None:
+    """Pause whatever's playing, so it doesn't talk over the mic during PTT."""
+    try:
+        subprocess.Popen(["playerctl", "pause"],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
+def _media_resume() -> None:
+    """Resume playback after a PTT voice command finishes."""
+    try:
+        subprocess.Popen(["playerctl", "play"],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
 def _beep_no_match(freq: int = 440, duration: float = 0.12, volume: float = 0.35) -> None:
     """Play a short low-key beep to signal no command was matched."""
     try:
@@ -85,7 +117,11 @@ def _beep_no_match(freq: int = 440, duration: float = 0.12, volume: float = 0.35
 
 def main():
     parser = argparse.ArgumentParser(description="Hand gesture cursor control")
-    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument("--camera", type=int, default=None,
+                        help="Camera device index. Default: auto-pick a "
+                             "plugged-in USB webcam (see config.yaml "
+                             "camera.prefer_external), else config.yaml "
+                             "camera.index.")
     parser.add_argument("--calibrate", action="store_true",
                         help="Run calibration before starting")
     parser.add_argument("--no-overlay", action="store_true",
@@ -93,14 +129,27 @@ def main():
     parser.add_argument("--no-voice", action="store_true",
                         help="Disable voice command layer (skip Whisper load)")
     parser.add_argument("--no-assistant", action="store_true",
-                        help="Disable conversational assistant (skip Ollama/Piper load)")
+                        help="Disable conversational assistant (skip Ollama/TTS load)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Print v2 commands instead of executing them")
     args = parser.parse_args()
 
     config = load_config()
 
+    camera_index = args.camera if args.camera is not None else resolve_camera_index(config)
+
+    # Read interpreter flag and set up v2/legacy path
+    CONFIG_PATH = Path(__file__).resolve().parent.parent / "voice_commands.yaml"
+    _vcfg = yaml.safe_load(CONFIG_PATH.read_text())
+    _interpreter_flag = _vcfg.get("interpreter", "legacy")
+
+    # Start JSONL logger (both paths log from the same logger)
+    from src.voice.logger import get_logger
+    voice_logger = get_logger()
+
     # Calibration
     if args.calibrate:
-        cal = run_calibration(args.camera)
+        cal = run_calibration(camera_index)
     else:
         cal = load_calibration()
 
@@ -122,6 +171,8 @@ def main():
     active_region = config["screen"]["active_region"]
     actions = config["actions"]
 
+    print(f"[camera] using /dev/video{camera_index}", flush=True)
+
     # Components
     classifier = GestureClassifier(pinch_thresh, fist_thresh)
     smoother = PointSmoother(
@@ -131,7 +182,7 @@ def main():
         d_cutoff=config["smoothing"]["d_cutoff"],
     )
     tracker = HandTracker(
-        camera_index=args.camera,
+        camera_index=camera_index,
         detection_conf=config["tracking"]["detection_confidence"],
         tracking_conf=config["tracking"]["tracking_confidence"],
     )
@@ -141,54 +192,77 @@ def main():
     state = {"paused": False}
     dispatcher = ActionDispatcher(mouse, state)
 
+    # v2 executor (needs mouse + state; _tts may not be loaded yet — set below)
+    if _interpreter_flag == "v2" and not args.no_voice:
+        try:
+            from src.voice.executor import Executor as VoiceExecutor
+            voice_executor = VoiceExecutor(mouse, state, tts=None, dry_run=args.dry_run)
+        except Exception:
+            voice_executor = None
+
     # Voice command layer (optional)
     voice_enabled = not args.no_voice
     ptt_recorder = None
     voice_matcher = None
+    voice_executor = None
     if voice_enabled:
         try:
             from src.voice.listener import PTTRecorder
             from src.voice.transcriber import transcribe, preload
-            from src.voice.intent import IntentMatcher
-            CONFIG_PATH = Path(__file__).resolve().parent.parent / "voice_commands.yaml"
             print("Loading Whisper model (downloads ~74 MB on first run)...")
             preload()
-            voice_matcher = IntentMatcher(str(CONFIG_PATH))
             ptt_recorder = PTTRecorder()
+
+            if _interpreter_flag == "v2":
+                from src.voice.registry import Registry
+                from src.voice.interpreter import Interpreter
+                from src.voice.executor import Executor as VoiceExecutor
+                _registry = Registry(str(CONFIG_PATH))
+                if _registry.load_embeddings() is None:
+                    print("[v2] WARNING: embedding cache missing — Tier 2 semantic disabled. "
+                          "Run setup.sh to precompute.")
+                voice_matcher = Interpreter(_registry, _vcfg)
+                # voice_executor created after mouse/state are ready (below)
+            else:
+                from src.voice.intent import IntentMatcher
+                voice_matcher = IntentMatcher(str(CONFIG_PATH))
+
             print("Voice commands ready. Touch thumb to pinky tip to record.")
         except Exception as exc:
             print(f"Voice layer unavailable: {exc}")
             voice_enabled = False
 
     # Conversational assistant (Stage 3, optional)
+    _tts = None
     if voice_enabled and not args.no_assistant:
         try:
-            import yaml as _yaml
-            _cfg_path = Path(__file__).resolve().parent.parent / "voice_commands.yaml"
-            _vcfg = _yaml.safe_load(_cfg_path.read_text()).get("assistant", {})
-            if _vcfg.get("enabled", True):
+            _asst_cfg = _vcfg.get("assistant", {})
+            if _asst_cfg.get("enabled", True):
                 from src.assistant.tts import TTSEngine
                 from src.assistant.brain import AssistantBrain
                 from src.assistant import router as _router_mod
                 _repo_root = Path(__file__).resolve().parent.parent
-                _tts_cfg = _vcfg.get("tts", {})
-                _model_path = _repo_root / _tts_cfg.get("model_path",
-                                                          "models/piper/en_US-lessac-high.onnx")
-                _llm_cfg = _vcfg.get("llm", {})
-                print("Loading Piper TTS voice...")
-                _tts = TTSEngine(str(_model_path))
+                _tts_cfg = _asst_cfg.get("tts", {})
+                _llm_cfg = _asst_cfg.get("llm", {})
+                print("Loading TTS voice...")
+                _tts = TTSEngine(_tts_cfg, repo_root=_repo_root,
+                                 logger=voice_logger)
                 _brain = AssistantBrain(
                     model=_llm_cfg.get("model", ""),
                     base_url=_llm_cfg.get("base_url", "http://localhost:11434"),
                     max_history_turns=_llm_cfg.get("max_history_turns", 4),
                     temperature=_llm_cfg.get("temperature", 0.7),
-                    persona=_vcfg.get("persona",
+                    no_think=_llm_cfg.get("no_think", False),
+                    persona=_asst_cfg.get("persona",
                         "You are Nova, a helpful concise female assistant. "
                         "Answer in 1-2 sentences."),
                 )
                 _router_mod.init(_brain, _tts)
                 _llm_model = _llm_cfg.get("model", "")
                 print(f"Assistant ready (Nova / {_llm_model}). Ask me anything.")
+                # Wire TTS to v2 executor for confirmation prompts
+                if voice_executor is not None:
+                    voice_executor.tts = _tts
         except Exception as exc:
             print(f"Assistant unavailable: {exc}")
 
@@ -197,6 +271,7 @@ def main():
           "THUMB+PINKY=voice PTT")
 
     ptt_was_active = False
+    ptt_media_was_playing = False
     pinch_was_active = False
     zoom_was_active = False
     right_click_was_active = False
@@ -348,16 +423,24 @@ def main():
             if voice_enabled and ptt_recorder is not None:
                 if gesture == Gesture.PTT_RECORD:
                     if not ptt_was_active:
+                        # Duck any playing media so it doesn't talk over the mic.
+                        ptt_media_was_playing = _media_is_playing()
+                        if ptt_media_was_playing:
+                            _media_pause()
                         ptt_recorder.start_recording()
                         _set_ptt_status("● REC", 30.0, (0, 80, 255))
                 elif ptt_was_active:
                     # Just released PTT — transcribe + dispatch in background
                     audio = ptt_recorder.stop_recording()
+                    resume_media = ptt_media_was_playing
+                    if len(audio) < 1600 and resume_media:
+                        _media_resume()
                     if len(audio) >= 1600:
                         def _voice_task(audio_data):
-                            _set_ptt_status("listening...", 8.0,
-                                            (255, 220, 0))
+                            _set_ptt_status("listening...", 8.0, (255, 220, 0))
+                            t0 = time.monotonic()
                             text = transcribe(audio_data)
+                            latency_ms = lambda: int((time.monotonic() - t0) * 1000)
                             if not text:
                                 _set_ptt_status("(nothing heard)", 1.5,
                                                 (100, 100, 255))
@@ -367,24 +450,85 @@ def main():
                                 ).start()
                                 return
                             print(f"[PTT] heard: {text!r}", flush=True)
-                            matches = voice_matcher.match_all(text)
-                            if matches:
-                                labels = ", ".join(p for _, _, p in matches)
-                                _set_ptt_status(f">> {labels}", 2.0,
-                                                (0, 255, 128))
-                                _notify(f"✓  {labels}", f'heard: "{text}"')
-                                for action, score, phrase in matches:
-                                    dispatcher.execute(action)
+
+                            if _interpreter_flag == "v2":
+                                # v2 path
+                                if voice_executor is not None and \
+                                        voice_executor._pending_confirm is not None:
+                                    voice_executor.confirm_response(text)
+                                    return
+                                from src.voice.intent import fallback_interpreter
+                                results = voice_matcher.interpret_all(text)
+                                if not results:
+                                    voice_logger.log(text, "conv", None, 0.0,
+                                                     latency_ms())
+                                    _set_ptt_status(f"? {text[:40]}", 2.5,
+                                                    (80, 80, 255))
+                                    _notify("? no match", f'heard: "{text}"',
+                                            urgency="normal")
+                                    threading.Thread(
+                                        target=_beep_no_match, daemon=True
+                                    ).start()
+                                    fallback_interpreter(text)
+                                else:
+                                    labels = []
+                                    for result in results:
+                                        if result.intent_name == "_error_":
+                                            if _tts:
+                                                _tts.speak("Sorry, say that again?")
+                                            voice_logger.log(
+                                                text, result.tier, None, 0.0,
+                                                latency_ms(), error="tier3_fail"
+                                            )
+                                            return
+                                        voice_logger.log(
+                                            text, result.tier, result.intent_name,
+                                            result.confidence, latency_ms(),
+                                            dry_run=args.dry_run,
+                                        )
+                                        if voice_executor is not None:
+                                            voice_executor.execute(result)
+                                        if result.clarification_question and _tts:
+                                            _tts.speak(result.clarification_question)
+                                        labels.append(result.intent_name)
+                                    label_str = ", ".join(labels)
+                                    _set_ptt_status(f">> {label_str}", 2.0,
+                                                    (0, 255, 128))
+                                    _notify(f"✓  {label_str}", f'heard: "{text}"')
                             else:
-                                _set_ptt_status(f"? {text[:40]}", 2.5,
-                                                (80, 80, 255))
-                                _notify("? no match", f'heard: "{text}"',
-                                        urgency="normal")
-                                threading.Thread(
-                                    target=_beep_no_match, daemon=True
-                                ).start()
+                                # legacy path — with logging
+                                matches = voice_matcher.match_all(text)
+                                if matches:
+                                    labels = ", ".join(p for _, _, p in matches)
+                                    _set_ptt_status(f">> {labels}", 2.0,
+                                                    (0, 255, 128))
+                                    _notify(f"✓  {labels}", f'heard: "{text}"')
+                                    for action, score, phrase in matches:
+                                        voice_logger.log(text, "legacy", phrase,
+                                                         score, latency_ms())
+                                        dispatcher.execute(action)
+                                else:
+                                    voice_logger.log(text, "legacy", None, 0.0,
+                                                     latency_ms())
+                                    _set_ptt_status(f"? {text[:40]}", 2.5,
+                                                    (80, 80, 255))
+                                    _notify("? no match", f'heard: "{text}"',
+                                            urgency="normal")
+                                    threading.Thread(
+                                        target=_beep_no_match, daemon=True
+                                    ).start()
+
+                        def _voice_task_and_resume(audio_data,
+                                                    resume_media=resume_media):
+                            try:
+                                _voice_task(audio_data)
+                            finally:
+                                if resume_media:
+                                    _media_resume()
+
                         threading.Thread(
-                            target=_voice_task, args=(audio,), daemon=True
+                            target=_voice_task_and_resume, args=(audio,),
+                            daemon=True
                         ).start()
                 ptt_was_active = (gesture == Gesture.PTT_RECORD)
 
@@ -442,6 +586,9 @@ def main():
                 cv2.imshow("Hand Gesture Control", frame)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
+                    break
+                if cv2.getWindowProperty("Hand Gesture Control",
+                                         cv2.WND_PROP_VISIBLE) < 1:
                     break
             else:
                 # Still need a small delay to not spin CPU

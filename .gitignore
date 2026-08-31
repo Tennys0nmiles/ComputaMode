@@ -14,6 +14,9 @@ faster_whisper_models/
 # Piper TTS voice models (downloaded per-machine via setup_assistant.sh)
 models/piper/
 
+# Kokoro TTS voice model (downloaded per-machine, ~338 MB)
+models/kokoro/
+
 # Device-local calibration data (per-machine, never commit)
 calibration/*.json
 

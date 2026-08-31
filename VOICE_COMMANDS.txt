@@ -142,4 +142,4 @@ TIPS
 • Add a custom command: edit voice_commands.yaml, add a new intent block
   with phrases and an action (shell command or built-in keyword).
 • If a command misfires, just say the more specific phrasing (e.g.
-  "close this tab" instead of "close tab").
+  "close this tab" instead of "close tab").`

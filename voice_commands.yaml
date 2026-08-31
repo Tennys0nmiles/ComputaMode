@@ -1,94 +1,237 @@
 # Voice Commands Configuration
-# Each intent has a list of phrases (synonyms/variations) and an action.
 #
-# Actions:
-#   Built-in keywords : scroll_up, scroll_down, left_click, right_click,
-#                       pause_gestures, resume_gestures
-#   Anything else     : executed as a shell command
+# Three layers of matching (in priority order):
 #
-# Chaining: say "and", "then", or "also" between commands to run multiple.
-#   e.g. "close tab and open terminal" runs both actions in sequence.
+#   1. Dictation  — "write/type/dictate <text>" → types verbatim via ydotool
+#   2. Search     — "search for/google/find <query>" → opens browser search
+#   3. App slots  — "{verb} {app}" resolved from the `apps` + `verbs` registry
+#                   below. No need to list every combination manually.
+#                   e.g. "close settings", "launch terminal", "quit vs code"
+#   4. Intents    — fixed commands (scroll, volume, tabs, zoom, editing, etc.)
+#   5. Assistant  — anything unmatched goes to the local LLM (Nova / Ollama)
 #
-# Keyboard shortcuts use xdotool (install: sudo apt install xdotool).
-# Fuzzy matching handles minor transcription errors automatically.
+# Chaining: "and", "then", "also" between commands runs them in sequence.
+#   e.g. "open terminal and close firefox"
+
+# ── Interpreter flag ───────────────────────────────────────────────────────────
+# Set to "v2" once JSONL confirms v2 handles all daily commands.
+# Delete legacy path and this key after cutover is complete.
+interpreter: legacy
+
+# ── App registry ──────────────────────────────────────────────────────────────
+# Add any app here. Supported verb keys: open, close, focus, minimize, maximize.
+# focus/minimize/maximize require wmctrl (sudo apt install wmctrl).
+# If a verb key is missing the command falls through to the intents table.
+
+apps:
+  firefox:
+    aliases: [firefox, browser, web, chrome, chromium]
+    open:     "firefox -P default"
+    close:    "pkill -SIGTERM firefox || pkill -SIGTERM -f 'chrome|chromium'"
+    focus:    "wmctrl -a firefox"
+
+  terminal:
+    aliases: [terminal, console, shell, command line]
+    open:     "gnome-terminal"
+    close:    "pkill -SIGTERM gnome-terminal"
+    focus:    "wmctrl -a terminal"
+
+  settings:
+    aliases: [settings, preferences, control center, system settings, gnome settings]
+    open:     "gnome-control-center"
+    close:    "pkill -SIGTERM gnome-control-center"
+    focus:    "wmctrl -a control-center"
+
+  vscode:
+    aliases: [vscode, vs code, code, editor, code editor, visual studio]
+    open:     "code"
+    close:    "pkill -SIGTERM code"
+    focus:    "wmctrl -a code"
+
+  files:
+    aliases: [files, file manager, finder, nautilus, folder, file browser]
+    open:     "nautilus"
+    close:    "pkill -SIGTERM nautilus"
+    focus:    "wmctrl -a nautilus"
+
+  calculator:
+    aliases: [calculator, calc]
+    open:     "gnome-calculator"
+    close:    "pkill -SIGTERM gnome-calculator"
+
+  spotify:
+    aliases: [spotify, music, spotify app]
+    open:     "spotify"
+    close:    "pkill -SIGTERM spotify"
+    focus:    "wmctrl -a spotify"
+
+  discord:
+    aliases: [discord, discord app]
+    open:     "discord"
+    close:    "pkill -SIGTERM discord"
+    focus:    "wmctrl -a discord"
+
+  slack:
+    aliases: [slack, slack app]
+    open:     "slack"
+    close:    "pkill -SIGTERM slack"
+    focus:    "wmctrl -a slack"
+
+  vlc:
+    aliases: [vlc, media player, video player]
+    open:     "vlc"
+    close:    "pkill -SIGTERM vlc"
+    focus:    "wmctrl -a vlc"
+
+# ── Verb registry ─────────────────────────────────────────────────────────────
+# Each verb maps to a list of trigger phrases.
+# Longer / more specific phrases win over shorter ones when multiple match.
+
+verbs:
+  open:
+    - open
+    - launch
+    - start
+    - run
+    - load
+    - bring up
+    - show me
+    - open up
+    - fire up
+
+  close:
+    - close
+    - quit
+    - exit
+    - kill
+    - shut down
+    - terminate
+    - shut
+    - close out
+    - close down
+
+  focus:
+    - focus
+    - switch to
+    - go to
+    - activate
+    - show
+    - bring back
+    - go back to
+    - jump to
+
+  minimize:
+    - minimize
+    - hide
+
+  maximize:
+    - maximize
+    - expand
+
+
+# ── Fixed intents ─────────────────────────────────────────────────────────────
+# These handle everything that doesn't fit the {verb}+{app} pattern:
+# tabs, scrolling, volume, zoom, editing shortcuts, window manager actions.
 
 intents:
 
-  # ── Browser / app launching ────────────────────────────────────────────────
-  open_browser:
-    phrases:
-      - open browser
-      - launch browser
-      - open a browser
-      - start browser
-      - open firefox
-      - launch firefox
-      - start firefox
-      - open new firefox
-      - open chrome
-      - launch chrome
-      - open chromium
-      - go to browser
-      - open web
-      - browse the web
-    action: "firefox -P default"
+  # ── Slot-based intents (Tier 1 pattern matching) ──────────────────────────────
+  # These use typed {slots} for deterministic extraction before fuzzy matching.
 
-  open_terminal:
+  open_app:
     phrases:
-      - open terminal
-      - launch terminal
-      - new terminal
-      - open a terminal
-      - start terminal
-      - open console
-      - new console
-      - launch console
-      - terminal please
-    action: "gnome-terminal"
+      - open {app}
+      - launch {app}
+      - start {app}
+      - run {app}
+    pattern: "open {app}"
+    action: "{app.open}"
 
-  open_files:
+  close_app:
     phrases:
-      - open files
-      - open file manager
-      - launch files
-      - open file browser
-      - open finder
-      - open folder
-      - file manager
-      - browse files
-    action: "nautilus"
+      - close {app}
+      - quit {app}
+      - kill {app}
+    pattern: "close {app}"
+    action: "{app.close}"
 
-  open_editor:
+  type_text:
     phrases:
-      - open editor
-      - open vs code
-      - launch vs code
-      - open code
-      - open vscode
-      - start vscode
-      - launch editor
-      - code editor
-    action: "code"
+      - type {text}
+      - write {text}
+      - dictate {text}
+    pattern: "type {text}"
+    action: "ydotool type --delay 100 -- {text}"
 
-  open_settings:
+  # ── Discrete volume levels 1–10 (1=10%, 5=50%, 10=100%) ─────────────────────
+  volume_1:
+    phrases: [volume 1, volume one, set volume 1, set volume to 1]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 10%"
+
+  volume_2:
+    phrases: [volume 2, volume two, set volume 2, set volume to 2]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 20%"
+
+  volume_3:
+    phrases: [volume 3, volume three, set volume 3, set volume to 3]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 30%"
+
+  volume_4:
+    phrases: [volume 4, volume four, set volume 4, set volume to 4]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 40%"
+
+  volume_5:
+    phrases: [volume 5, volume five, set volume 5, set volume to 5]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 50%"
+
+  volume_6:
+    phrases: [volume 6, volume six, set volume 6, set volume to 6]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 60%"
+
+  volume_7:
+    phrases: [volume 7, volume seven, set volume 7, set volume to 7]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 70%"
+
+  volume_8:
+    phrases: [volume 8, volume eight, set volume 8, set volume to 8]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 80%"
+
+  volume_9:
+    phrases: [volume 9, volume nine, set volume 9, set volume to 9]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 90%"
+
+  volume_10:
+    phrases: [volume 10, volume ten, set volume 10, set volume to 10, max volume, volume max, full volume]
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ 100%"
+
+  # {number} = literal percentage; requires the word "percent" to avoid
+  # ambiguity with the 0–10 scale above ("set volume to 50 percent").
+  set_volume:
     phrases:
-      - open settings
-      - launch settings
-      - system settings
-      - open preferences
-      - go to settings
-      - show settings
-    action: "gnome-control-center"
+      - set volume to {number} percent
+      - volume {number} percent
+    pattern: "set volume to {number} percent"
+    action: "wpctl set-volume @DEFAULT_AUDIO_SINK@ {number}%"
 
-  open_calculator:
+  # {level} brightness on the same 0–10 scale (brightnessctl must be installed).
+  set_brightness_level:
     phrases:
-      - open calculator
-      - launch calculator
-      - calculator
-      - start calculator
-    action: "gnome-calculator"
+      - set brightness to {level}
+      - brightness level {level}
+      - brightness {level}
+      - set brightness {level}
+    pattern: "set brightness to {level}"
+    action: "brightnessctl set {level}%"
 
-  # ── Tab management ─────────────────────────────────────────────────────────
+  # Explicit-percent brightness ("set brightness to 75 percent").
+  set_brightness:
+    phrases:
+      - set brightness to {number} percent
+      - brightness {number} percent
+    pattern: "set brightness to {number} percent"
+    action: "brightnessctl set {number}%"
+
+  # ── Tab management ───────────────────────────────────────────────────────────
   close_tab:
     phrases:
       - close tab
@@ -105,7 +248,6 @@ intents:
       - close current firefox tab
       - close chrome tab
       - close this chrome tab
-      - close the firefox tab
       - shut this tab
       - get rid of this tab
       - remove this tab
@@ -158,7 +300,7 @@ intents:
       - go left tab
     action: "ydotool key --delay 0 ctrl+shift+Tab"
 
-  # ── Window management ──────────────────────────────────────────────────────
+  # ── Window management ────────────────────────────────────────────────────────
   close_window:
     phrases:
       - close window
@@ -177,49 +319,9 @@ intents:
       - exit application
     action: "ydotool key --delay 0 alt+F4"
 
-  close_firefox:
-    phrases:
-      - close firefox
-      - close firefox window
-      - quit firefox
-      - exit firefox
-      - kill firefox
-    action: "pkill -SIGTERM firefox"
-
-  close_chrome:
-    phrases:
-      - close chrome
-      - close chrome window
-      - quit chrome
-      - exit chrome
-      - kill chrome
-      - close chromium
-      - quit chromium
-    action: "pkill -SIGTERM -f 'chrome|chromium'"
-
-  close_terminal:
-    phrases:
-      - close terminal
-      - close this terminal
-      - quit terminal
-      - exit terminal
-      - kill terminal
-    action: "pkill -SIGTERM gnome-terminal"
-
-  close_vscode:
-    phrases:
-      - close editor
-      - close vscode
-      - quit vscode
-      - exit vscode
-      - close vs code
-      - quit vs code
-    action: "pkill -SIGTERM code"
-
   new_window:
     phrases:
       - new window
-      - open window
       - open new window
       - create window
       - open a new window
@@ -259,7 +361,7 @@ intents:
       - fullscreen mode
     action: "ydotool key --delay 0 F11"
 
-  # ── App switcher ────────────────────────────────────────────────────────────
+  # ── App switcher ─────────────────────────────────────────────────────────────
   switch_app:
     phrases:
       - switch app
@@ -272,7 +374,7 @@ intents:
       - task switch
     action: "ydotool key --delay 0 alt+Tab"
 
-  # ── Navigation ─────────────────────────────────────────────────────────────
+  # ── Navigation ───────────────────────────────────────────────────────────────
   go_back:
     phrases:
       - go back
@@ -328,7 +430,7 @@ intents:
       - open incognito
     action: "ydotool key --delay 0 ctrl+shift+p"
 
-  # ── Editing ────────────────────────────────────────────────────────────────
+  # ── Editing ──────────────────────────────────────────────────────────────────
   copy:
     phrases:
       - copy
@@ -415,7 +517,7 @@ intents:
       - backspace
     action: "ydotool key --delay 0 Delete"
 
-  # ── Zoom ───────────────────────────────────────────────────────────────────
+  # ── Zoom ─────────────────────────────────────────────────────────────────────
   zoom_in:
     phrases:
       - zoom in
@@ -447,7 +549,7 @@ intents:
       - reset text size
     action: "ydotool key --delay 0 ctrl+0"
 
-  # ── Scroll ─────────────────────────────────────────────────────────────────
+  # ── Scroll ───────────────────────────────────────────────────────────────────
   scroll_up:
     phrases:
       - scroll up
@@ -468,7 +570,7 @@ intents:
       - down a bit
     action: scroll_down
 
-  # ── Media / volume ─────────────────────────────────────────────────────────
+  # ── Media / volume ───────────────────────────────────────────────────────────
   play_pause:
     phrases:
       - play
@@ -479,7 +581,7 @@ intents:
       - pause playback
       - stop music
       - play music
-    action: "ydotool key --delay 0 XF86AudioPlay"
+    action: "playerctl play-pause"
 
   next_track:
     phrases:
@@ -488,7 +590,7 @@ intents:
       - skip track
       - skip song
       - forward track
-    action: "ydotool key --delay 0 XF86AudioNext"
+    action: "playerctl next"
 
   previous_track:
     phrases:
@@ -498,7 +600,7 @@ intents:
       - last song
       - back track
       - rewind track
-    action: "ydotool key --delay 0 XF86AudioPrev"
+    action: "playerctl previous"
 
   volume_up:
     phrases:
@@ -532,7 +634,7 @@ intents:
       - unmute
     action: "ydotool key --delay 0 XF86AudioMute"
 
-  # ── Workspace switching ────────────────────────────────────────────────────
+  # ── Workspace switching ───────────────────────────────────────────────────────
   workspace_left:
     phrases:
       - previous workspace
@@ -554,7 +656,7 @@ intents:
       - move workspace right
     action: "ydotool key --delay 0 ctrl+alt+Right"
 
-  # ── Screenshot ─────────────────────────────────────────────────────────────
+  # ── Screenshot ───────────────────────────────────────────────────────────────
   take_screenshot:
     phrases:
       - take screenshot
@@ -567,7 +669,7 @@ intents:
       - snip screen
     action: "gnome-screenshot"
 
-  # ── Gesture control ────────────────────────────────────────────────────────
+  # ── Gesture control ───────────────────────────────────────────────────────────
   pause_gestures:
     phrases:
       - pause gestures
@@ -588,24 +690,33 @@ intents:
       - gestures on
     action: resume_gestures
 
+
 # ── Stage 3: conversational assistant ────────────────────────────────────────
 assistant:
   enabled: true
 
   llm:
-    # Local Ollama model — swap to llama3.2:3b for ~1-2s faster responses
-    # at the cost of noticeably weaker conversational quality.
-    model: qwen3:4b
+    model: llama3.2:3b
     base_url: http://localhost:11434
-    max_history_turns: 4      # how many back-and-forth turns to keep in context
+    max_history_turns: 4
     temperature: 0.7
 
   tts:
-    # Path to the Piper voice model.  Relative paths are resolved from the
-    # repo root.  Run setup_assistant.sh to download the model file.
-    model_path: models/piper/en_US-lessac-high.onnx
-    # Alternatives (download via setup_assistant.sh --voice <name>):
-    #   models/piper/en_US-amy-medium.onnx   — smaller (~11 MB), faster, more synthetic
+    engine: kokoro                            # or: piper (legacy fallback)
+    model_path: models/kokoro/kokoro-v1.0.onnx
+    voices_path: models/kokoro/voices-v1.0.bin
+    speed: 1.0
+    # ── Voice blend ──────────────────────────────────────────────────
+    blend:
+      - voice: af_nicole
+        weight: 0.2
+      - voice: af_bella
+        weight: 0.8
+    # To revert to a single voice, comment out blend and uncomment:
+    # voice: af_nicole
+    # ── Legacy Piper (uncomment the two lines below to revert) ──────
+    # engine: piper
+    # model_path: models/piper/en_US-lessac-high.onnx
 
   persona: >
     You are Nova, a helpful and concise female assistant.
@@ -613,11 +724,12 @@ assistant:
     Never describe, narrate, or repeat back computer actions — those are
     handled separately and silently.
 
-# ── Matching settings ────────────────────────────────────────────────────────
-matching:
-  # Minimum similarity score (0.0–1.0) to accept a match.
-  confidence_threshold: 0.55
 
-  # Filler words stripped from the start/end before matching.
+# ── Matching settings ─────────────────────────────────────────────────────────
+matching:
+  confidence_threshold: 0.55
   strip_fillers: true
   filler_words: [um, uh, like, so, please, hey, okay, ok, can you, could you]
+  v2_confidence_threshold: 0.75
+  v2_margin_gap: 0.10
+  tier3_timeout_seconds: 6

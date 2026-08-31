@@ -19,14 +19,11 @@ REPO="$(cd "$(dirname "$0")" && pwd)"
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 FORCE_MODEL=""
-VOICE="lessac-high"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --model)   FORCE_MODEL="$2"; shift 2 ;;
-    --voice)   VOICE="$2";       shift 2 ;;
     --model=*) FORCE_MODEL="${1#--model=}"; shift ;;
-    --voice=*) VOICE="${1#--voice=}";       shift ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
@@ -41,9 +38,10 @@ header()  { echo ""; echo "── $* ──────────────�
 header "System dependencies"
 
 MISSING=()
-command -v xdotool  &>/dev/null && ok "xdotool found"  || MISSING+=("xdotool")
-command -v ollama   &>/dev/null && ok "ollama found"    || MISSING+=("ollama")
-python3 -c "import sounddevice" &>/dev/null 2>&1        || true  # checked later via pip
+command -v xdotool   &>/dev/null && ok "xdotool found"    || MISSING+=("xdotool")
+command -v ollama    &>/dev/null && ok "ollama found"      || MISSING+=("ollama")
+command -v espeak-ng &>/dev/null && ok "espeak-ng found"   || MISSING+=("espeak-ng")
+python3 -c "import sounddevice" &>/dev/null 2>&1           || true  # checked later via pip
 
 if dpkg -l portaudio19-dev &>/dev/null 2>&1; then
   ok "portaudio19-dev installed"
@@ -57,7 +55,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
   echo ""
   for dep in "${MISSING[@]}"; do
     case "$dep" in
-      xdotool|portaudio19-dev)
+      xdotool|portaudio19-dev|espeak-ng)
         echo "  Install with: sudo apt install $dep" ;;
       ollama)
         echo "  Install Ollama: curl -fsSL https://ollama.com/install.sh | sh" ;;
@@ -194,51 +192,71 @@ PYEOF
   fi
 fi
 
-# ── 4. Piper TTS voice model ──────────────────────────────────────────────────
-header "Piper TTS voice"
+# ── 4. Kokoro TTS model (kokoro-onnx, CPU-only, 24 kHz) ──────────────────────
+header "Kokoro TTS model"
 
-MODEL_DIR="$REPO/models/piper"
-mkdir -p "$MODEL_DIR"
+# Pinned versions — update here if you need a newer model release.
+KOKORO_MODEL_VERSION="v1.0"
+KOKORO_MODEL_FILE="kokoro-${KOKORO_MODEL_VERSION}.onnx"
+KOKORO_VOICES_FILE="voices-${KOKORO_MODEL_VERSION}.bin"
+KOKORO_BASE_URL="https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0"
 
-case "$VOICE" in
-  lessac-high)
-    BASE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/high"
-    FNAME="en_US-lessac-high"
-    ;;
-  amy-medium)
-    BASE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium"
-    FNAME="en_US-amy-medium"
-    ;;
-  *)
-    warn "Unknown voice '$VOICE'. Choose: lessac-high | amy-medium"
-    exit 1 ;;
-esac
+KOKORO_DIR="$REPO/models/kokoro"
+mkdir -p "$KOKORO_DIR"
 
-ONNX="$MODEL_DIR/$FNAME.onnx"
-JSON="$MODEL_DIR/$FNAME.onnx.json"
-
-if [[ -f "$ONNX" && -f "$JSON" ]]; then
-  ok "Voice model already downloaded: $FNAME"
+if [[ -f "$KOKORO_DIR/$KOKORO_MODEL_FILE" ]]; then
+  ok "$KOKORO_MODEL_FILE already present"
 else
-  echo "  Downloading Piper voice: $FNAME ..."
-  wget -q --show-progress -O "$ONNX" "$BASE_URL/$FNAME.onnx"
-  wget -q -O "$JSON" "$BASE_URL/$FNAME.onnx.json"
-  ok "Saved to $MODEL_DIR/"
+  echo "  Downloading $KOKORO_MODEL_FILE (~311 MB) ..."
+  wget -q --show-progress -O "$KOKORO_DIR/$KOKORO_MODEL_FILE" \
+    "$KOKORO_BASE_URL/$KOKORO_MODEL_FILE"
+  ok "Saved to $KOKORO_DIR/$KOKORO_MODEL_FILE"
 fi
 
-# Update voice_commands.yaml tts.model_path if using non-default voice
-if [[ "$VOICE" != "lessac-high" ]]; then
-  sed -i "s|en_US-lessac-high.onnx|$FNAME.onnx|g" "$REPO/voice_commands.yaml"
-  ok "Updated voice_commands.yaml tts.model_path → $FNAME.onnx"
+if [[ -f "$KOKORO_DIR/$KOKORO_VOICES_FILE" ]]; then
+  ok "$KOKORO_VOICES_FILE already present"
+else
+  echo "  Downloading $KOKORO_VOICES_FILE (~27 MB) ..."
+  wget -q --show-progress -O "$KOKORO_DIR/$KOKORO_VOICES_FILE" \
+    "$KOKORO_BASE_URL/$KOKORO_VOICES_FILE"
+  ok "Saved to $KOKORO_DIR/$KOKORO_VOICES_FILE"
 fi
+
+# ── Legacy Piper (kept for reference; uncomment to restore) ───────────────────
+# PIPER_DIR="$REPO/models/piper"
+# mkdir -p "$PIPER_DIR"
+# PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/high"
+# PIPER_FNAME="en_US-lessac-high"
+# wget -q --show-progress -O "$PIPER_DIR/$PIPER_FNAME.onnx" "$PIPER_BASE/$PIPER_FNAME.onnx"
+# wget -q -O "$PIPER_DIR/$PIPER_FNAME.onnx.json" "$PIPER_BASE/$PIPER_FNAME.onnx.json"
+
+# ── 5. V2 voice interpreter dependencies ─────────────────────────────────────
+header "V2 voice interpreter (rapidfuzz + sentence-transformers)"
+
+pip install rapidfuzz sentence-transformers --quiet
+
+python3 -c "
+from sentence_transformers import SentenceTransformer
+m = SentenceTransformer('all-MiniLM-L6-v2')
+assert m.encode(['test']).shape == (1, 384)
+print('[ok] all-MiniLM-L6-v2 ready')
+"
+
+PYTHONPATH="${REPO}" python3 -c "
+from src.voice.registry import Registry
+r = Registry('${REPO}/voice_commands.yaml')
+r.precompute_embeddings()
+print('[ok] embedding cache written')
+"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "────────────────────────────────────────────────────────────────────────"
 echo "  Setup complete."
 echo ""
-echo "  Model : $MODEL"
-echo "  Voice : $FNAME"
+echo "  LLM   : $MODEL"
+echo "  Voice : Kokoro $KOKORO_MODEL_VERSION (default: af_nicole)"
+echo "          Edit  assistant.tts.voice  in voice_commands.yaml to change."
 echo ""
 echo "  Next steps:"
 echo "    source venv/bin/activate"
