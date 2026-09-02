@@ -317,8 +317,9 @@ def launch_claude(resume=False):
     # Clean environment for the subprocess
     clean_env = {k: v for k, v in os.environ.items()
                  if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
-    # Try gnome-terminal first, then common alternatives
+    # Try ghostty first, then common alternatives
     terminals = [
+        ["ghostty", "-e", "bash", "-c", bash_cmd],
         ["gnome-terminal", "--", "bash", "-c", bash_cmd],
         ["xterm", "-e", "bash", "-c", bash_cmd],
         ["x-terminal-emulator", "-e", "bash", "-c", bash_cmd],
@@ -332,7 +333,7 @@ def launch_claude(resume=False):
         except FileNotFoundError:
             continue
 
-    log_red("No terminal emulator found! Install gnome-terminal.")
+    log_red("No terminal emulator found! Install ghostty or gnome-terminal.")
 
 
 def handle_trigger():
